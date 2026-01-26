@@ -45,6 +45,7 @@ MIDTRANS_SETUP.md
 SETUP_VERCEL*.md
 vercel-env-*.txt
 vercel-env-*.md
+VERCEL_ENV_VARIABLES.txt
 
 # vercel
 .vercel
