@@ -1,0 +1,54 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+.yarn/install-state.gz
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env*.local
+.env*.backup
+*.env.backup
+
+# Firebase Service Account Keys (NEVER commit these!)
+*firebase-adminsdk*.json
+serviceAccountKey*.json
+*-firebase-adminsdk-*.json
+serviceAccountKey*.txt
+SERVICE_ACCOUNT_KEY_FOR_VERCEL.txt
+
+# Midtrans & Payment Gateway Credentials
+MIDTRANS_SETUP.md
+*midtrans*.txt
+
+# Vercel & Deployment Setup Files with Credentials
+SETUP_VERCEL*.md
+vercel-env-*.txt
+vercel-env-*.md
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts

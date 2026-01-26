@@ -1,0 +1,66 @@
+==========================================
+COPY KE VERCEL ENVIRONMENT VARIABLES
+==========================================
+
+Buka: https://vercel.com/dashboard > Project > Settings > Environment Variables
+
+Copy-paste setiap Key dan Value berikut ke Vercel:
+
+---
+
+Key: NEXT_PUBLIC_FIREBASE_API_KEY
+Value: AIzaSyBudBlQo86hBrf5FoN9kpOf3i9adxg9ShU
+
+---
+
+Key: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
+Value: crm-pt-rad.firebaseapp.com
+
+---
+
+Key: NEXT_PUBLIC_FIREBASE_PROJECT_ID
+Value: crm-pt-rad
+
+---
+
+Key: NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
+Value: crm-pt-rad.firebasestorage.app
+
+---
+
+Key: NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+Value: 1096984236949
+
+---
+
+Key: NEXT_PUBLIC_FIREBASE_APP_ID
+Value: 1:1096984236949:web:119c4bafc4b01691909c9c
+
+---
+
+Key: NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+Value: G-7NBLHP2WS4
+
+---
+
+Key: FIREBASE_SERVICE_ACCOUNT_KEY
+Value: 
+[REPLACE DENGAN SERVICE ACCOUNT KEY JSON YANG SUDAH DI-CONVERT KE SINGLE LINE]
+Dapatkan dari: https://console.firebase.google.com/project/crm-pt-rad/settings/serviceaccounts/adminsdk
+Convert JSON ke single line dengan: jq -c . serviceAccountKey.json
+
+Contoh format (replace semua yang dalam kurung):
+{"type":"service_account","project_id":"crm-pt-rad","private_key_id":"[YOUR_KEY_ID]","private_key":"-----BEGIN PRIVATE KEY-----\n[YOUR_PRIVATE_KEY]\n-----END PRIVATE KEY-----\n","client_email":"[YOUR_CLIENT_EMAIL]@crm-pt-rad.iam.gserviceaccount.com","client_id":"[YOUR_CLIENT_ID]","auth_uri":"https://accounts.google.com/o/oauth2/auth","token_uri":"https://oauth2.googleapis.com/token","auth_provider_x509_cert_url":"https://www.googleapis.com/oauth2/v1/certs","client_x509_cert_url":"https://www.googleapis.com/robot/v1/metadata/x509/[YOUR_CLIENT_EMAIL]%40crm-pt-rad.iam.gserviceaccount.com"}
+
+---
+
+CATATAN:
+- Pilih environment: Production, Preview, Development (atau centang semua)
+- Jangan lupa deploy ulang setelah menambah variables baru
+- FIREBASE_SERVICE_ACCOUNT_KEY wajib diisi untuk fitur admin berfungsi
+
+
+
+
+
+
