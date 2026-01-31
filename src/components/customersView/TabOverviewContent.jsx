@@ -165,10 +165,10 @@ const TabOverviewContent = () => {
                                                     <div className="d-flex gap-2 justify-content-end">
                                                         <Link 
                                                             href={`/qr-code/${cls.id || cls.serviceId}`} 
-                                                            className="btn btn-sm btn-light-primary"
+                                                            className="btn btn-sm btn-light-primary d-flex align-items-center gap-1"
                                                             title="Tampilkan QR Code"
                                                         >
-                                                            📱
+                                                            <img src="/images/qr.svg" alt="QR" style={{width: '16px', height: '16px'}} />
                                                         </Link>
                                                         <Link href={`/services/view/${cls.id || cls.serviceId}`} className="btn btn-sm btn-light-primary">
                                                             Detail

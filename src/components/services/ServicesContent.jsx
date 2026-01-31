@@ -472,36 +472,6 @@ const ServicesContent = () => {
                     )}
                 </div>
             </div>
-
-            {/* Enrolled Classes */}
-            {enrolledServices.length > 0 && (
-                <div className="card border-0 shadow-sm">
-                    <div className="card-header bg-transparent border-bottom pb-3">
-                        <h5 className="card-title mb-0 fw-bold">Kelas Saya</h5>
-                    </div>
-                    <div className="card-body p-4">
-                        <div className="row g-4">
-                            {enrolledServices.map((enrolled, index) => (
-                                <div key={index} className="col-lg-4 col-md-6">
-                                    <div className="card border border-success h-100">
-                                        <div className="card-body p-4">
-                                            <div className="d-flex justify-content-between align-items-start mb-3">
-                                                <h6 className="fw-bold mb-0">{enrolled.name || enrolled.title || `Kelas ${index + 1}`}</h6>
-                                                <span className="badge bg-soft-success text-success">Aktif</span>
-                                            </div>
-                                            {enrolled.purchaseDate && (
-                                                <p className="text-muted small mb-0">
-                                                    Terdaftar: {new Date(enrolled.purchaseDate).toLocaleDateString('id-ID')}
-                                                </p>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
         </div>
     )
 }

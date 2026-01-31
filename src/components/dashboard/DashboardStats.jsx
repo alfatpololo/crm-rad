@@ -1,5 +1,5 @@
 import React from 'react'
-import { FiDollarSign, FiUsers, FiShoppingBag, FiFileText } from 'react-icons/fi'
+import { FiDollarSign, FiUsers, FiBook, FiFileText, FiAward, FiCheckCircle } from 'react-icons/fi'
 
 const StatCard = ({ title, value, icon, color }) => (
     <div className="col-xxl-3 col-md-6">
@@ -27,27 +27,27 @@ const DashboardStats = ({ stats }) => {
     return (
         <>
             <StatCard
-                title="Total Pendapatan (Lunas)"
+                title="Total Pendapatan"
                 value={stats.revenue}
                 icon={<FiDollarSign size={24} />}
                 color="success"
             />
             <StatCard
-                title="Tagihan Belum Lunas"
-                value={stats.unpaid}
+                title="Total Invoice"
+                value={stats.totalInvoices}
                 icon={<FiFileText size={24} />}
-                color="danger"
+                color="primary"
             />
             <StatCard
                 title="Total Peserta"
                 value={stats.participants}
                 icon={<FiUsers size={24} />}
-                color="primary"
+                color="info"
             />
             <StatCard
-                title="Produk Terjual"
-                value={stats.productsSold}
-                icon={<FiShoppingBag size={24} />}
+                title="Total Kelas/Layanan"
+                value={stats.totalClasses}
+                icon={<FiBook size={24} />}
                 color="warning"
             />
         </>

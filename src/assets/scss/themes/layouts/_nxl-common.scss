@@ -9,8 +9,14 @@
 	margin-left: $navigation-width;
 	min-height: calc(100vh - #{$header-height});
 	transition: all 0.3s ease;
+	display: flex;
+	flex-direction: column;
 
 	.nxl-content {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+
 		&.without-header {
 			padding-top: 0px;
 		}
@@ -22,6 +28,7 @@
 		}
 
 		.main-content {
+			flex: 1;
 			overflow-x: hidden;
 			padding: 30px 30px 5px;
 

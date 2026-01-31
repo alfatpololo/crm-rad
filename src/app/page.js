@@ -1,13 +1,14 @@
 import React from 'react'
 import PageHeader from '@/components/shared/pageHeader/PageHeader'
 import PageHeaderDate from '@/components/shared/pageHeader/PageHeaderDate'
-import PaymentRecordChart from '@/components/widgetsCharts/PaymentRecordChart'
-import LatestLeads from '@/components/widgetsTables/LatestLeads'
 import DuplicateLayout from './duplicateLayout'
 import ParticipantDashboard from '@/components/dashboard/ParticipantDashboard'
+import PaymentStatsChart from '@/components/dashboard/PaymentStatsChart'
+import RecentParticipants from '@/components/dashboard/RecentParticipants'
 
 import { getDashboardStats } from '@/actions/dashboard'
 import { getParticipantDashboard } from '@/actions/participantDashboard'
+import { getRecentParticipants, getPaymentStats } from '@/actions/adminDashboard'
 import { getSessionUser } from '@/actions/auth'
 import DashboardStats from '@/components/dashboard/DashboardStats'
 
@@ -19,16 +20,34 @@ const Home = async () => {
   
   let stats = null
   let participantData = null
+  let recentParticipants = []
+  let paymentStats = null
 
   if (isAdmin) {
+    // Fetch admin dashboard data
     stats = await getDashboardStats()
+    recentParticipants = await getRecentParticipants(10)
+    paymentStats = await getPaymentStats()
+
     // Ensure stats has default values
     if (!stats) {
       stats = {
-        revenue: 0,
-        unpaid: 0,
+        revenue: 'Rp 0',
+        unpaid: 'Rp 0',
         participants: 0,
-        productsSold: 0
+        totalClasses: 0,
+        totalInvoices: 0,
+        pendingPayments: 'Rp 0'
+      }
+    }
+
+    if (!paymentStats) {
+      paymentStats = {
+        awaiting: 0,
+        completed: 0,
+        rejected: 0,
+        revenue: 0,
+        monthlyData: []
       }
     }
   } else {
@@ -68,8 +87,8 @@ const Home = async () => {
               <DashboardStats stats={stats} />
             </div>
             <div className='row'>
-              <PaymentRecordChart />
-              <LatestLeads title={"Peserta Terbaru"} />
+              <PaymentStatsChart paymentStats={paymentStats} />
+              <RecentParticipants participants={recentParticipants} />
             </div>
           </>
         ) : (

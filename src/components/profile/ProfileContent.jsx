@@ -1,17 +1,15 @@
 'use client'
 import React from 'react'
 import TabOverviewContent from '../customersView/TabOverviewContent'
-// import TabBillingContent from '../customersView/TabBillingContent'
-// import TabSecurity from '../customersView/TabSecurity'
-// import Profile from '../widgetsList/Profile'
+import TabPaymentHistory from '../customersView/TabPaymentHistory'
+import Profile from '../widgetsList/Profile'
 
 const ProfileContent = () => {
     return (
         <>
             <div className="col-xxl-4 col-xl-6">
                 <div className="mb-4">
-                    {/* <Profile /> */}
-                    <div className="card p-4">Profile component commented out</div>
+                    <Profile />
                 </div>
             </div>
             <div className="col-xxl-8 col-xl-6">
@@ -24,17 +22,11 @@ const ProfileContent = () => {
                             <li className="nav-item flex-fill border-top" role="presentation">
                                 <a href="#" className="nav-link" data-bs-toggle="tab" data-bs-target="#billingTab" role="tab">Pembayaran</a>
                             </li>
-                            <li className="nav-item flex-fill border-top" role="presentation">
-                                <a href="#" className="nav-link" data-bs-toggle="tab" data-bs-target="#securityTab" role="tab">Keamanan</a>
-                            </li>
                         </ul>
                     </div>
                     <div className="tab-content">
                         <TabOverviewContent />
-                        {/* <div className="tab-pane fade" id="billingTab" role="tabpanel">
-                            <TabBillingContent billingHistoryshow={true} />
-                        </div>
-                        <TabSecurity /> */}
+                        <TabPaymentHistory />
                     </div>
                 </div>
             </div>

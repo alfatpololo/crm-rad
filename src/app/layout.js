@@ -9,8 +9,8 @@ import ThemeCustomizer from "@/components/shared/ThemeCustomizer";
 import { AuthProvider } from "@/context/AuthProvider";
 
 export const metadata = {
-  title: "Duralux | Dashboard",
-  description: "Duralux is a admin Dashboard create for multipurpose,",
+  title: "PT. RAD Indonesia CRM",
+  description: "PT. RAD Indonesia - Customer Relationship Management System",
 };
 
 export default function RootLayout({ children }) {

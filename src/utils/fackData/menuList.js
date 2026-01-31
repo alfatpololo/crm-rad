@@ -120,64 +120,6 @@ export const adminMenuList = [
                 subdropdownMenu: false
             }
         ]
-    },
-    {
-        id: 5,
-        name: "Laporan",
-        path: "#",
-        icon: 'feather-file-text',
-        dropdownMenu: [
-            {
-                id: 1,
-                name: "Pendapatan",
-                path: "/reports/revenue",
-                subdropdownMenu: false
-            },
-            {
-                id: 2,
-                name: "Pengeluaran",
-                path: "/reports/expenses",
-                subdropdownMenu: false
-            },
-            {
-                id: 3,
-                name: "Log Aktivitas",
-                path: "/reports/activity",
-                subdropdownMenu: false
-            }
-        ]
-    },
-    {
-        id: 6,
-        name: "Pengaturan",
-        path: "#",
-        icon: 'feather-settings',
-        dropdownMenu: [
-            {
-                id: 1,
-                name: "Umum",
-                path: "/settings/general",
-                subdropdownMenu: false
-            },
-            {
-                id: 2,
-                name: "Role Pengguna",
-                path: "/settings/roles",
-                subdropdownMenu: false
-            },
-            {
-                id: 3,
-                name: "Template Invoice",
-                path: "/settings/invoice-template",
-                subdropdownMenu: false
-            },
-            {
-                id: 4,
-                name: "Notifikasi",
-                path: "/settings/notifications",
-                subdropdownMenu: false
-            }
-        ]
     }
 ];
 
@@ -220,13 +162,6 @@ export const userMenuList = [
     },
     {
         id: 6,
-        name: "Pembayaran",
-        path: "/payments-history",
-        icon: 'feather-dollar-sign',
-        dropdownMenu: []
-    },
-    {
-        id: 7,
         name: "Profil",
         path: "/profile",
         icon: 'feather-user',

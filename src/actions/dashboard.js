@@ -8,21 +8,25 @@ export async function getDashboardStats() {
             revenue: 0,
             unpaid: 0,
             participants: 0,
-            productsSold: 0
+            totalClasses: 0,
+            totalInvoices: 0,
+            pendingPayments: 0
         };
 
         // 1. Total Participants
         const participantsSnapshot = await adminDb.collection('participants').count().get();
         const participantsCount = participantsSnapshot.data().count;
 
-        // 2. Invoices (Revenue & Unpaid)
-        // Note: For large datasets, client-side aggregation is bad. 
-        // Firestore aggregation queries are efficient but basic sum might need iterating if fields are complex.
-        // For MVP, we'll fetch all invoices (limit to recent if needed) and calculate.
+        // 2. Total Classes/Services
+        const servicesSnapshot = await adminDb.collection('services').count().get();
+        const totalClasses = servicesSnapshot.data().count;
+
+        // 3. Invoices Stats (Revenue, Unpaid, Total, Pending)
         const invoicesSnapshot = await adminDb.collection('invoices').get();
         let totalRevenue = 0;
         let totalUnpaid = 0;
-        let productsSold = 0;
+        let pendingPayments = 0;
+        const totalInvoices = invoicesSnapshot.size;
 
         invoicesSnapshot.forEach(doc => {
             const data = doc.data();
@@ -30,22 +34,11 @@ export async function getDashboardStats() {
 
             if (data.status === 'paid') {
                 totalRevenue += grandTotal;
-            } else {
-                // Assuming 'pending', 'overdue', 'partially' as unpaid
-                if (['pending', 'overdue', 'unpaid'].includes(data.status)) {
-                    totalUnpaid += grandTotal;
-                }
-            }
-
-            // Count products sold
-            if (data.items && Array.isArray(data.items)) {
-                data.items.forEach(item => {
-                    // Primitive check if item is a product (assuming we tracked type or just count all items)
-                    // The user asked for "Products Sold", not Services.
-                    // If we didn't store type in invoices, we might have to count all or guess.
-                    // For now, count all items with qty.
-                    productsSold += (parseInt(item.qty) || 0);
-                });
+            } else if (data.status === 'pending') {
+                pendingPayments += grandTotal;
+                totalUnpaid += grandTotal;
+            } else if (['overdue', 'unpaid'].includes(data.status)) {
+                totalUnpaid += grandTotal;
             }
         });
 
@@ -53,7 +46,9 @@ export async function getDashboardStats() {
             revenue: totalRevenue.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
             unpaid: totalUnpaid.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
             participants: participantsCount,
-            productsSold: productsSold
+            totalClasses: totalClasses,
+            totalInvoices: totalInvoices,
+            pendingPayments: pendingPayments.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
         };
 
     } catch (error) {
@@ -62,7 +57,9 @@ export async function getDashboardStats() {
             revenue: 0,
             unpaid: 0,
             participants: 0,
-            productsSold: 0
+            totalClasses: 0,
+            totalInvoices: 0,
+            pendingPayments: 0
         };
     }
 }
