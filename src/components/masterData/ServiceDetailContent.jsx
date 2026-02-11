@@ -2,6 +2,7 @@
 import React from 'react'
 import Image from 'next/image'
 import { FiCalendar, FiClock, FiUsers, FiDollarSign, FiMapPin, FiTag, FiBook, FiAward, FiCheckCircle, FiXCircle } from 'react-icons/fi'
+import { getApplicablePriceTier } from '@/utils/servicePrice'
 
 const ServiceDetailContent = ({ service }) => {
     const formatDate = (dateString) => {
@@ -127,11 +128,14 @@ const ServiceDetailContent = ({ service }) => {
                                         </div>
                                         <div>
                                             <p className="text-muted small mb-1">Harga</p>
-                                            {service.isFree || parseFloat(service.price || 0) === 0 ? (
-                                                <h5 className="mb-0 text-success fw-bold">GRATIS</h5>
-                                            ) : (
-                                                <h5 className="mb-0 fw-bold">Rp {parseFloat(service.price || 0).toLocaleString('id-ID')}</h5>
-                                            )}
+                                            {(() => {
+                                                const t = getApplicablePriceTier(service)
+                                                return t.isFree ? (
+                                                    <h5 className="mb-0 text-success fw-bold">GRATIS</h5>
+                                                ) : (
+                                                    <h5 className="mb-0 fw-bold">Rp {Number(t.price).toLocaleString('id-ID')}{t.label ? ` (${t.label})` : ''}</h5>
+                                                )
+                                            })()}
                                         </div>
                                     </div>
                                 </div>

@@ -24,8 +24,10 @@ import ProjectLeads from '@/components/widgetsList/ProjectLeads'
 import { upcomingEventsData } from '@/utils/fackData/upcomingEventsData'
 import Footer from '@/components/shared/Footer'
 import UsersList from '@/components/widgetsList/UsersList'
+import { serializeForClient } from '@/utils/serialization'
 
 const page = () => {
+    const safeUpcoming = serializeForClient(upcomingEventsData)
     return (
         <>
             <PageHeader >
@@ -53,7 +55,7 @@ const page = () => {
                     <Browser title={"Browser"} />
                     <Tickets title={"Tickets"} />
                     <Upgrade />
-                    <ScheduleTwo title={"Upcoming Activities"} data={upcomingEventsData} />
+                    <ScheduleTwo title={"Upcoming Activities"} data={safeUpcoming} />
                     <InvoiceOverview title={"Invoice Overview"} />
                     <ProjectLeads />
                 </div>

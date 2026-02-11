@@ -4,6 +4,7 @@ import Footer from '@/components/shared/Footer'
 import ServiceEdit from '@/components/masterData/ServiceEdit'
 import { getService } from '@/actions/masterData'
 import { notFound } from 'next/navigation'
+import { serializeForClient } from '@/utils/serialization'
 
 const EditService = async ({ params }) => {
     const service = await getService(params.id);
@@ -11,6 +12,8 @@ const EditService = async ({ params }) => {
     if (!service) {
         notFound();
     }
+
+    const safeService = serializeForClient(service)
 
     return (
         <>
@@ -21,7 +24,7 @@ const EditService = async ({ params }) => {
             </PageHeader>
             <div className='main-content'>
                 <div className='row'>
-                    <ServiceEdit service={service} />
+                    <ServiceEdit service={safeService} />
                 </div>
             </div>
             <Footer />

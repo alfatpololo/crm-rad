@@ -2,6 +2,9 @@ import React from 'react'
 import PageHeader from '@/components/shared/pageHeader/PageHeader'
 import InvoiceCreate from '@/components/payment/InvoiceCreate'
 import { getServices, getProducts } from '@/actions/masterData'
+import { serializeForClient } from '@/utils/serialization'
+
+export const dynamic = 'force-dynamic'
 
 const page = async () => {
   const services = await getServices();
@@ -10,6 +13,7 @@ const page = async () => {
     ...services.map(s => ({ ...s, type: 'service' })),
     ...products.map(p => ({ ...p, type: 'product' }))
   ];
+  const safeMasterData = serializeForClient(masterData)
 
   return (
     <>
@@ -17,7 +21,7 @@ const page = async () => {
         {/* <PaymentHeader /> */}
       </PageHeader>
       <div className='main-content'>
-        <InvoiceCreate masterData={masterData} />
+        <InvoiceCreate masterData={safeMasterData} />
       </div>
     </>
   )

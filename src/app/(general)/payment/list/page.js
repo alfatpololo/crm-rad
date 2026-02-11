@@ -4,11 +4,13 @@ import PaymentTable from '@/components/payment/PaymentTable'
 import PaymentHeader from '@/components/payment/PaymentHeader'
 import Footer from '@/components/shared/Footer'
 import { getInvoices } from '@/actions/invoices'
+import { serializeForClient } from '@/utils/serialization'
+
+export const dynamic = 'force-dynamic'
 
 const page = async () => {
     const invoices = await getInvoices();
 
-    // Transform Firestore data to match Table expectation
     const tableData = invoices.map(inv => {
         let statusContent = 'Unpaid';
         let statusColor = 'bg-soft-warning text-warning';
@@ -27,7 +29,7 @@ const page = async () => {
             client: {
                 name: inv.participantName || 'Unknown',
                 email: inv.participantEmail || '',
-                img: '' // Placeholder
+                img: ''
             },
             transaction: inv.transactionId || 'N/A',
             amount: `$${inv.total || 0} USD`,
@@ -39,6 +41,8 @@ const page = async () => {
         };
     });
 
+    const safeData = serializeForClient(tableData)
+
     return (
         <>
             <PageHeader>
@@ -46,7 +50,7 @@ const page = async () => {
             </PageHeader>
             <div className='main-content'>
                 <div className='row'>
-                    <PaymentTable data={tableData} />
+                    <PaymentTable data={safeData} />
                 </div>
             </div>
             <Footer />

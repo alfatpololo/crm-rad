@@ -20,8 +20,11 @@ function removeUndefined(obj) {
 
 /**
  * Purchase a class/service for participant
+ * @param {string} serviceId
+ * @param {Object} serviceData - Service object (from list or getService)
+ * @param {Object} [options] - { promoCode?: string }
  */
-export async function purchaseClass(serviceId, serviceData) {
+export async function purchaseClass(serviceId, serviceData, options = {}) {
     try {
         const user = await getSessionUser();
         if (!user) {
@@ -68,9 +71,24 @@ export async function purchaseClass(serviceId, serviceData) {
             return { success: false, error: 'Anda sudah terdaftar di kelas ini' };
         }
 
-        // Check if service is free
-        const isFree = serviceData.isFree || parseFloat(serviceData.price || 0) === 0;
-        const servicePrice = parseFloat(serviceData.price || 0);
+        const { getApplicablePriceTier, getPromoDiscount } = await import('@/utils/servicePrice');
+        const tier = getApplicablePriceTier(serviceData, new Date());
+        const isFree = tier.isFree;
+        let servicePrice = tier.price;
+        const promoResult = getPromoDiscount(serviceData, servicePrice, options.promoCode || '', new Date());
+        if (promoResult.applied) {
+            servicePrice = promoResult.finalPrice;
+        }
+        let installmentTerms = tier.installmentTerms && tier.installmentTerms.length ? tier.installmentTerms : null;
+        if (!installmentTerms?.length && serviceData.installmentTerms != null) {
+            const raw = serviceData.installmentTerms;
+            installmentTerms = Array.isArray(raw) ? raw : (typeof raw === 'string' ? raw.split(/[,;\s]+/).map(s => parseInt(s, 10)).filter(n => !isNaN(n) && n >= 2) : []);
+        }
+        if (!installmentTerms?.length) installmentTerms = [3, 4, 6, 12];
+        let minDp = tier.minDp;
+        if ((minDp == null || minDp === '') && serviceData.minDp != null && serviceData.minDp !== '') {
+            minDp = parseFloat(serviceData.minDp);
+        }
 
         // If free, bypass payment and directly enroll
         if (isFree) {
@@ -173,6 +191,8 @@ export async function purchaseClass(serviceId, serviceData) {
         const paymentResult = await createMidtransTransaction({
             orderId: orderId,
             amount: servicePrice,
+            installmentTerms,
+            minDp,
             items: [
                 {
                     id: serviceId,
@@ -282,6 +302,250 @@ export async function purchaseClass(serviceId, serviceData) {
     } catch (error) {
         console.error('Error purchasing class:', error);
         return { success: false, error: error.message || 'Gagal membeli kelas' };
+    }
+}
+
+/**
+ * Purchase a physical product (merch) for participant
+ * @param {string} productId
+ * @param {Object} productData - Product object (name, price, etc.)
+ * @param {Object} [options] - { quantity?: number }
+ */
+export async function purchaseProduct(productId, productData, options = {}) {
+    try {
+        const user = await getSessionUser();
+        if (!user) {
+            return { success: false, error: 'User not authenticated. Silakan login ulang.' };
+        }
+
+        const participantRef = adminDb.collection('participants').doc(user.uid);
+        const participantDoc = await participantRef.get();
+        if (!participantDoc.exists) {
+            await participantRef.set({
+                name: user.displayName || user.email?.split('@')[0] || 'User',
+                email: user.email,
+                displayName: user.displayName || user.email?.split('@')[0] || 'User',
+                photoURL: user.photoURL || null,
+                enrolledClasses: [],
+                completedClasses: [],
+                certificates: [],
+                attendanceHistory: [],
+                extensionRequests: [],
+                role: 'participant',
+                createdAt: new Date(),
+            });
+        }
+
+        const participantData = participantDoc.exists ? participantDoc.data() : {};
+        const qty = Math.max(1, parseInt(options.quantity, 10) || 1);
+        const unitPrice = parseFloat(productData.price) || 0;
+        if (unitPrice <= 0) {
+            return { success: false, error: 'Harga produk tidak valid.' };
+        }
+        const totalPrice = unitPrice * qty;
+
+        const stock = productData.stock != null ? parseInt(productData.stock, 10) : null;
+        if (stock !== null && stock < qty) {
+            return { success: false, error: `Stok tidak cukup. Tersedia: ${stock}` };
+        }
+
+        const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        const orderId = `ORDER-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+        const invoiceData = {
+            invoiceNumber,
+            orderId,
+            productId,
+            client: {
+                name: user.displayName || user.email?.split('@')[0] || 'User',
+                email: user.email || '',
+                phone: participantData.phone || '',
+                address: participantData.address || '',
+            },
+            sender: {
+                name: 'LMS Training Center',
+                email: 'admin@mail.com',
+                phone: '',
+                address: '',
+            },
+            items: [
+                {
+                    id: 1,
+                    name: productData.name || 'Produk',
+                    product: productData.name || 'Produk',
+                    qty,
+                    price: unitPrice,
+                    total: totalPrice,
+                },
+            ],
+            subTotal: totalPrice,
+            tax: 0,
+            grandTotal: totalPrice,
+            status: 'pending',
+            issueDate: new Date(),
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            note: `Pembelian merch: ${productData.name} x${qty}`,
+            paymentMethod: 'midtrans',
+        };
+
+        const invoiceResult = await createInvoice(invoiceData);
+        if (!invoiceResult.success) {
+            return { success: false, error: 'Gagal membuat invoice: ' + invoiceResult.error };
+        }
+
+        const { createMidtransTransaction } = await import('./midtrans');
+        const paymentResult = await createMidtransTransaction({
+            orderId,
+            amount: totalPrice,
+            installmentTerms: null,
+            minDp: null,
+            items: [
+                {
+                    id: productId,
+                    price: unitPrice,
+                    quantity: qty,
+                    name: productData.name || 'Produk',
+                    category: productData.category || 'Merchandise',
+                },
+            ],
+            customer: {
+                name: user.displayName || user.email?.split('@')[0] || 'User',
+                email: user.email || '',
+                phone: participantData.phone || '',
+            },
+        });
+
+        if (!paymentResult.success) {
+            return {
+                success: false,
+                error: 'Gagal membuat transaksi pembayaran: ' + (paymentResult.error || 'Unknown error'),
+            };
+        }
+
+        await adminDb.collection('invoices').doc(invoiceResult.id).update({
+            midtransToken: paymentResult.token,
+            midtransRedirectUrl: paymentResult.redirectUrl,
+        });
+
+        return {
+            success: true,
+            invoiceId: invoiceResult.id,
+            invoiceNumber,
+            orderId,
+            paymentToken: paymentResult.token,
+            redirectUrl: paymentResult.redirectUrl,
+            message: 'Silakan selesaikan pembayaran untuk melanjutkan.',
+        };
+    } catch (error) {
+        console.error('Error purchasing product:', error);
+        return { success: false, error: error.message || 'Gagal membeli produk' };
+    }
+}
+
+/**
+ * Purchase or renew membership
+ * @param {string} membershipTypeId
+ * @param {Object} typeData - { name, price, durationMonths }
+ */
+export async function purchaseMembership(membershipTypeId, typeData) {
+    try {
+        const user = await getSessionUser();
+        if (!user) return { success: false, error: 'User not authenticated. Silakan login ulang.' };
+
+        const participantRef = adminDb.collection('participants').doc(user.uid);
+        const participantDoc = await participantRef.get();
+        if (!participantDoc.exists) {
+            await participantRef.set({
+                name: user.displayName || user.email?.split('@')[0] || 'User',
+                email: user.email,
+                displayName: user.displayName || user.email?.split('@')[0] || 'User',
+                photoURL: user.photoURL || null,
+                enrolledClasses: [],
+                completedClasses: [],
+                certificates: [],
+                attendanceHistory: [],
+                extensionRequests: [],
+                role: 'participant',
+                createdAt: new Date(),
+            });
+        }
+
+        const participantData = participantDoc.exists ? participantDoc.data() : {};
+        const price = parseFloat(typeData.price) || 0;
+        if (price <= 0) return { success: false, error: 'Harga membership tidak valid.' };
+
+        const invoiceNumber = `INV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+        const orderId = `ORDER-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+        const invoiceData = {
+            invoiceNumber,
+            orderId,
+            membershipTypeId,
+            client: {
+                name: user.displayName || user.email?.split('@')[0] || 'User',
+                email: user.email || '',
+                phone: participantData.phone || '',
+                address: participantData.address || '',
+            },
+            sender: {
+                name: 'LMS Training Center',
+                email: 'admin@mail.com',
+                phone: '',
+                address: '',
+            },
+            items: [
+                { id: 1, name: typeData.name || 'Membership', product: typeData.name || 'Membership', qty: 1, price, total: price },
+            ],
+            subTotal: price,
+            tax: 0,
+            grandTotal: price,
+            status: 'pending',
+            issueDate: new Date(),
+            dueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+            note: `Membership: ${typeData.name}`,
+            paymentMethod: 'midtrans',
+        };
+
+        const invoiceResult = await createInvoice(invoiceData);
+        if (!invoiceResult.success) return { success: false, error: 'Gagal membuat invoice: ' + invoiceResult.error };
+
+        const { createMidtransTransaction } = await import('./midtrans');
+        const paymentResult = await createMidtransTransaction({
+            orderId,
+            amount: price,
+            installmentTerms: null,
+            minDp: null,
+            items: [
+                { id: membershipTypeId, price, quantity: 1, name: typeData.name || 'Membership', category: 'Membership' },
+            ],
+            customer: {
+                name: user.displayName || user.email?.split('@')[0] || 'User',
+                email: user.email || '',
+                phone: participantData.phone || '',
+            },
+        });
+
+        if (!paymentResult.success) {
+            return { success: false, error: 'Gagal membuat transaksi: ' + (paymentResult.error || 'Unknown error') };
+        }
+
+        await adminDb.collection('invoices').doc(invoiceResult.id).update({
+            midtransToken: paymentResult.token,
+            midtransRedirectUrl: paymentResult.redirectUrl,
+        });
+
+        return {
+            success: true,
+            invoiceId: invoiceResult.id,
+            invoiceNumber,
+            orderId,
+            paymentToken: paymentResult.token,
+            redirectUrl: paymentResult.redirectUrl,
+            message: 'Silakan selesaikan pembayaran untuk mengaktifkan membership.',
+        };
+    } catch (error) {
+        console.error('Error purchasing membership:', error);
+        return { success: false, error: error.message || 'Gagal membeli membership' };
     }
 }
 

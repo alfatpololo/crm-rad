@@ -1,0 +1,87 @@
+/*
+ * Bottom navigation - mobile style (participant only)
+ * Tampil di bawah layar seperti navigasi cepat di mobile
+ */
+$bottom-nav-height: 64px;
+$bottom-nav-z: 1030;
+$bottom-nav-bg: #fff;
+$bottom-nav-border: rgba(0, 0, 0, 0.08);
+$bottom-nav-active: #3454d1;
+$bottom-nav-inactive: #6b7885;
+
+.bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: $bottom-nav-height;
+  background: $bottom-nav-bg;
+  border-top: 1px solid $bottom-nav-border;
+  z-index: $bottom-nav-z;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+  box-shadow: 0 -2px 12px rgba(0, 0, 0, 0.06);
+
+  @media (max-width: 991.98px) {
+    display: block;
+  }
+}
+
+.bottom-nav-inner {
+  display: flex;
+  align-items: stretch;
+  justify-content: space-around;
+  height: 100%;
+  max-width: 100%;
+  padding: 0 8px;
+}
+
+.bottom-nav-item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 4px;
+  color: $bottom-nav-inactive;
+  text-decoration: none;
+  font-size: 11px;
+  font-weight: 500;
+  transition: color 0.2s ease;
+  min-width: 0;
+
+  &:active {
+    opacity: 0.85;
+  }
+
+  &.active {
+    color: $bottom-nav-active;
+
+    .bottom-nav-icon {
+      color: $bottom-nav-active;
+    }
+  }
+}
+
+.bottom-nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: inherit;
+  flex-shrink: 0;
+}
+
+.bottom-nav-label {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Padding agar konten tidak tertutup bottom nav (hanya saat bottom nav ada & mobile) */
+@media (max-width: 991.98px) {
+  .layout-has-bottom-nav .nxl-container .nxl-content {
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom, 0px) + 16px);
+  }
+}

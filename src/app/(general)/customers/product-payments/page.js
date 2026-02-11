@@ -3,12 +3,14 @@ import PageHeader from '@/components/shared/pageHeader/PageHeader'
 import Footer from '@/components/shared/Footer'
 import ProductPaymentsTable from '@/components/crm/ProductPaymentsTable'
 import { getProductPayments } from '@/actions/crm'
+import { serializeForClient } from '@/utils/serialization'
 
 export const dynamic = 'force-dynamic'
 
 const ProductPaymentsPage = async () => {
     const result = await getProductPayments()
     const payments = result.payments || []
+    const safeData = serializeForClient(payments)
 
     return (
         <>
@@ -19,7 +21,7 @@ const ProductPaymentsPage = async () => {
             </PageHeader>
             <div className='main-content'>
                 <div className='row'>
-                    <ProductPaymentsTable data={payments} />
+                    <ProductPaymentsTable data={safeData} />
                 </div>
             </div>
             <Footer />

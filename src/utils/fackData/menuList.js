@@ -2,7 +2,7 @@ export const adminMenuList = [
     {
         id: 1,
         name: "Dasbor",
-        path: "/",
+        path: "/dashboard",
         icon: 'feather-airplay',
         dropdownMenu: []
     },
@@ -41,6 +41,12 @@ export const adminMenuList = [
                 id: 4,
                 name: "Jenis Layanan",
                 path: "/master-data/service-types",
+                subdropdownMenu: false
+            },
+            {
+                id: 41,
+                name: "Tipe Membership",
+                path: "/master-data/membership-types",
                 subdropdownMenu: false
             },
             {
@@ -128,7 +134,7 @@ export const userMenuList = [
     {
         id: 1,
         name: "Dasbor",
-        path: "/",
+        path: "/dashboard",
         icon: 'feather-airplay',
         dropdownMenu: []
     },
@@ -137,6 +143,13 @@ export const userMenuList = [
         name: "Layanan/Kelas",
         path: "/services",
         icon: 'feather-book',
+        dropdownMenu: []
+    },
+    {
+        id: 22,
+        name: "Merch / Produk",
+        path: "/products",
+        icon: 'feather-shopping-bag',
         dropdownMenu: []
     },
     {
@@ -158,6 +171,13 @@ export const userMenuList = [
         name: "Kehadiran",
         path: "/attendance",
         icon: 'feather-check-circle',
+        dropdownMenu: []
+    },
+    {
+        id: 7,
+        name: "Membership",
+        path: "/membership",
+        icon: 'feather-award',
         dropdownMenu: []
     },
     {

@@ -6,6 +6,7 @@ import { getService } from '@/actions/masterData'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { FiArrowLeft, FiEdit } from 'react-icons/fi'
+import { serializeForClient } from '@/utils/serialization'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,6 +17,8 @@ const ServiceDetailPage = async ({ params }) => {
     if (!service) {
         notFound()
     }
+
+    const safeService = serializeForClient(service)
 
     return (
         <>
@@ -33,7 +36,7 @@ const ServiceDetailPage = async ({ params }) => {
             </PageHeader>
             <div className='main-content'>
                 <div className='row'>
-                    <ServiceDetailContent service={service} />
+                    <ServiceDetailContent service={safeService} />
                 </div>
             </div>
             <Footer />

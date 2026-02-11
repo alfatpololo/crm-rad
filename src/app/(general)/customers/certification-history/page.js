@@ -3,12 +3,14 @@ import PageHeader from '@/components/shared/pageHeader/PageHeader'
 import Footer from '@/components/shared/Footer'
 import CertificationHistoryTable from '@/components/crm/CertificationHistoryTable'
 import { getCertificationHistory } from '@/actions/crm'
+import { serializeForClient } from '@/utils/serialization'
 
 export const dynamic = 'force-dynamic'
 
 const CertificationHistoryPage = async () => {
     const result = await getCertificationHistory()
     const history = result.history || []
+    const safeData = serializeForClient(history)
 
     return (
         <>
@@ -19,7 +21,7 @@ const CertificationHistoryPage = async () => {
             </PageHeader>
             <div className='main-content'>
                 <div className='row'>
-                    <CertificationHistoryTable data={history} />
+                    <CertificationHistoryTable data={safeData} />
                 </div>
             </div>
             <Footer />

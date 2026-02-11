@@ -34,7 +34,13 @@ export async function getServices() {
                 serialized.updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : 
                                        (data.updatedAt instanceof Date ? data.updatedAt.toISOString() : data.updatedAt);
             }
-            
+            if (Array.isArray(data.priceTiers)) {
+                serialized.priceTiers = data.priceTiers.map(tier => ({
+                    ...tier,
+                    startDate: tier.startDate?.toDate ? tier.startDate.toDate().toISOString().split('T')[0] : (tier.startDate instanceof Date ? tier.startDate.toISOString().split('T')[0] : tier.startDate),
+                    endDate: tier.endDate?.toDate ? tier.endDate.toDate().toISOString().split('T')[0] : (tier.endDate instanceof Date ? tier.endDate.toISOString().split('T')[0] : tier.endDate),
+                }));
+            }
             return serialized;
         });
     } catch (error) {
@@ -50,22 +56,28 @@ export async function createService(data) {
             throw new Error("Database not initialized");
         }
         
-        // Validate required fields
         if (!data.name) {
             return { success: false, error: 'Nama kelas/event harus diisi' };
         }
-        
-        // Only validate price if not free
-        if (!data.isFree && (!data.price || data.price <= 0)) {
-            return { success: false, error: 'Harga harus diisi dan lebih dari 0' };
+        const parseInstallmentTerms = (v) => {
+            if (Array.isArray(v)) return v.filter(n => Number.isInteger(n) && n >= 2).sort((a, b) => a - b);
+            if (typeof v === 'string') return v.split(/[,;\s]+/).map(s => parseInt(s, 10)).filter(n => !isNaN(n) && n >= 2).sort((a, b) => a - b);
+            return [];
+        };
+        const hasPriceTiers = Array.isArray(data.priceTiers) && data.priceTiers.length > 0;
+        if (hasPriceTiers) {
+            for (let i = 0; i < data.priceTiers.length; i++) {
+                const t = data.priceTiers[i];
+                if (!t.label) return { success: false, error: `Tier ${i + 1}: label harus diisi` };
+                const p = parseFloat(t.price);
+                if (isNaN(p) || p < 0) return { success: false, error: `Tier ${i + 1}: harga harus angka >= 0` };
+            }
+        } else {
+            if (!data.isFree && (!data.price || parseFloat(data.price) <= 0)) {
+                return { success: false, error: 'Harga harus diisi dan lebih dari 0 (atau gunakan tier harga)' };
+            }
+            if (data.isFree) data.price = 0;
         }
-        
-        // If free, set price to 0
-        if (data.isFree) {
-            data.price = 0;
-        }
-        
-        // Convert date strings to Date objects for Firestore
         const newDoc = {
             ...data,
             startDate: data.startDate ? new Date(data.startDate) : null,
@@ -73,19 +85,41 @@ export async function createService(data) {
             createdAt: new Date(),
             updatedAt: new Date(),
         };
-        
-        // Remove null/empty values for cleaner data (but keep imageUrl even if null for now)
+        if (hasPriceTiers) {
+            newDoc.priceTiers = data.priceTiers.map(t => ({
+                label: t.label,
+                price: parseFloat(t.price),
+                minDp: t.minDp != null && t.minDp !== '' ? parseFloat(t.minDp) : null,
+                installmentTerms: parseInstallmentTerms(t.installmentTerms).length ? parseInstallmentTerms(t.installmentTerms) : [3, 4, 6, 12],
+            }));
+            newDoc.price = newDoc.priceTiers[0]?.price ?? 0;
+            newDoc.isFree = newDoc.price === 0;
+        } else {
+            newDoc.installmentTerms = parseInstallmentTerms(data.installmentTerms).length ? parseInstallmentTerms(data.installmentTerms) : [3, 4, 6, 12];
+            newDoc.minDp = data.minDp != null && data.minDp !== '' ? parseFloat(data.minDp) : null;
+        }
+        if (data.promo && data.promo.enabled) {
+            const pr = data.promo;
+            newDoc.promo = {
+                enabled: true,
+                type: pr.type === 'percent' ? 'percent' : 'fixed',
+                value: parseFloat(pr.value) || 0,
+                code: (pr.code && String(pr.code).trim()) ? String(pr.code).trim() : null,
+                label: (pr.label && String(pr.label).trim()) ? String(pr.label).trim() : null,
+                startDate: pr.startDate ? new Date(pr.startDate) : null,
+                endDate: pr.endDate ? new Date(pr.endDate) : null,
+            };
+        } else {
+            newDoc.promo = { enabled: false };
+        }
         Object.keys(newDoc).forEach(key => {
             if (key === 'imageUrl') {
-                // Keep imageUrl field even if null (we might want to track it)
-                if (newDoc[key] === '') {
-                    delete newDoc[key];
-                }
-            } else if (newDoc[key] === null || newDoc[key] === '') {
+                if (newDoc[key] === '') delete newDoc[key];
+            } else if (key === 'priceTiers' || key === 'promo') { /* keep */ }
+            else if (newDoc[key] === null || newDoc[key] === '') {
                 delete newDoc[key];
             }
         });
-        
         console.log('Creating service with data:', newDoc);
         
         const docRef = await adminDb.collection('services').add(newDoc);
@@ -127,7 +161,21 @@ export async function getService(id) {
             serialized.updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : 
                                    (data.updatedAt instanceof Date ? data.updatedAt.toISOString() : data.updatedAt);
         }
-        
+        if (Array.isArray(data.priceTiers)) {
+            serialized.priceTiers = data.priceTiers.map(tier => ({
+                ...tier,
+                startDate: tier.startDate?.toDate ? tier.startDate.toDate().toISOString().split('T')[0] : (tier.startDate instanceof Date ? tier.startDate.toISOString().split('T')[0] : tier.startDate),
+                endDate: tier.endDate?.toDate ? tier.endDate.toDate().toISOString().split('T')[0] : (tier.endDate instanceof Date ? tier.endDate.toISOString().split('T')[0] : tier.endDate),
+            }));
+        }
+        if (data.promo && typeof data.promo === 'object') {
+            const pr = data.promo;
+            serialized.promo = {
+                ...pr,
+                startDate: pr.startDate?.toDate ? pr.startDate.toDate().toISOString().split('T')[0] : (pr.startDate instanceof Date ? pr.startDate.toISOString().split('T')[0] : pr.startDate),
+                endDate: pr.endDate?.toDate ? pr.endDate.toDate().toISOString().split('T')[0] : (pr.endDate instanceof Date ? pr.endDate.toISOString().split('T')[0] : pr.endDate),
+            };
+        }
         return serialized;
     } catch (error) {
         console.error('Error fetching service:', error);
@@ -145,38 +193,69 @@ export async function updateService(id, data) {
         if (!id) {
             return { success: false, error: 'ID service tidak ditemukan' };
         }
-        
-        // Validate required fields
         if (!data.name) {
             return { success: false, error: 'Nama kelas/event harus diisi' };
         }
-        
-        // Only validate price if not free
-        if (!data.isFree && (!data.price || data.price <= 0)) {
-            return { success: false, error: 'Harga harus diisi dan lebih dari 0' };
+
+        const parseInstallmentTerms = (v) => {
+            if (Array.isArray(v)) return v.filter(n => Number.isInteger(n) && n >= 2).sort((a, b) => a - b);
+            if (typeof v === 'string') return v.split(/[,;\s]+/).map(s => parseInt(s, 10)).filter(n => !isNaN(n) && n >= 2).sort((a, b) => a - b);
+            return [];
+        };
+        const hasPriceTiers = Array.isArray(data.priceTiers) && data.priceTiers.length > 0;
+        if (hasPriceTiers) {
+            for (let i = 0; i < data.priceTiers.length; i++) {
+                const t = data.priceTiers[i];
+                if (!t.label) return { success: false, error: `Tier ${i + 1}: label harus diisi` };
+                const p = parseFloat(t.price);
+                if (isNaN(p) || p < 0) return { success: false, error: `Tier ${i + 1}: harga tidak valid` };
+            }
+        } else {
+            if (!data.isFree && (!data.price || parseFloat(data.price) <= 0)) {
+                return { success: false, error: 'Harga harus diisi dan lebih dari 0 (atau gunakan tier harga)' };
+            }
+            if (data.isFree) data.price = 0;
         }
-        
-        // If free, set price to 0
-        if (data.isFree) {
-            data.price = 0;
-        }
-        
-        // Convert date strings to Date objects for Firestore
         const updateDoc = {
             ...data,
             startDate: data.startDate ? new Date(data.startDate) : null,
             endDate: data.endDate ? new Date(data.endDate) : null,
             updatedAt: new Date(),
         };
+        if (hasPriceTiers) {
+            updateDoc.priceTiers = data.priceTiers.map(t => ({
+                label: t.label,
+                price: parseFloat(t.price),
+                minDp: t.minDp != null && t.minDp !== '' ? parseFloat(t.minDp) : null,
+                installmentTerms: parseInstallmentTerms(t.installmentTerms).length ? parseInstallmentTerms(t.installmentTerms) : [3, 4, 6, 12],
+            }));
+            updateDoc.price = updateDoc.priceTiers[0]?.price ?? 0;
+            updateDoc.isFree = updateDoc.price === 0;
+        } else {
+            updateDoc.priceTiers = [];
+            updateDoc.installmentTerms = parseInstallmentTerms(data.installmentTerms).length ? parseInstallmentTerms(data.installmentTerms) : [3, 4, 6, 12];
+            updateDoc.minDp = data.minDp != null && data.minDp !== '' ? parseFloat(data.minDp) : null;
+        }
+        if (data.promo && data.promo.enabled) {
+            const pr = data.promo;
+            updateDoc.promo = {
+                enabled: true,
+                type: pr.type === 'percent' ? 'percent' : 'fixed',
+                value: parseFloat(pr.value) || 0,
+                code: (pr.code && String(pr.code).trim()) ? String(pr.code).trim() : null,
+                label: (pr.label && String(pr.label).trim()) ? String(pr.label).trim() : null,
+                startDate: pr.startDate ? new Date(pr.startDate) : null,
+                endDate: pr.endDate ? new Date(pr.endDate) : null,
+            };
+        } else {
+            updateDoc.promo = { enabled: false };
+        }
         
-        // Remove null/empty values for cleaner data (but keep imageUrl even if null)
         Object.keys(updateDoc).forEach(key => {
             if (key === 'imageUrl') {
-                // Keep imageUrl field even if null
-                if (updateDoc[key] === '') {
-                    delete updateDoc[key];
-                }
-            } else if (updateDoc[key] === null || updateDoc[key] === '') {
+                if (updateDoc[key] === '') delete updateDoc[key];
+            } else if (key === 'priceTiers' || key === 'promo') { /* keep */ }
+            else if (updateDoc[key] === null || updateDoc[key] === '') {
                 delete updateDoc[key];
             }
         });
@@ -572,22 +651,15 @@ export async function getProducts() {
         const snapshot = await adminDb.collection('products').orderBy('createdAt', 'desc').get();
         return snapshot.docs.map(doc => {
             const data = doc.data();
-            // Convert Firestore Timestamps and Date objects to ISO strings for serialization
-            const serialized = {
-                id: doc.id,
-                ...data,
-            };
-            
-            // Convert Date/Timestamp fields to ISO strings
+            const serialized = { id: doc.id, ...data };
             if (data.createdAt) {
-                serialized.createdAt = data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : 
-                                       (data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt);
+                serialized.createdAt = data.createdAt?.toDate ? data.createdAt.toDate().toISOString() :
+                    (data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt);
             }
             if (data.updatedAt) {
-                serialized.updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : 
-                                       (data.updatedAt instanceof Date ? data.updatedAt.toISOString() : data.updatedAt);
+                serialized.updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() :
+                    (data.updatedAt instanceof Date ? data.updatedAt.toISOString() : data.updatedAt);
             }
-            
             return serialized;
         });
     } catch (error) {
@@ -596,12 +668,119 @@ export async function getProducts() {
     }
 }
 
+export async function getProduct(id) {
+    try {
+        if (!adminDb || !id) return null;
+        const docRef = await adminDb.collection('products').doc(id).get();
+        if (!docRef.exists) return null;
+        const data = docRef.data();
+        const serialized = { id: docRef.id, ...data };
+        if (data.createdAt) {
+            serialized.createdAt = data.createdAt?.toDate ? data.createdAt.toDate().toISOString() :
+                (data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt);
+        }
+        if (data.updatedAt) {
+            serialized.updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() :
+                (data.updatedAt instanceof Date ? data.updatedAt.toISOString() : data.updatedAt);
+        }
+        return serialized;
+    } catch (error) {
+        console.error('Error fetching product:', error);
+        return null;
+    }
+}
+
 export async function createProduct(data) {
     try {
         if (!adminDb) throw new Error("Database not initialized");
-        const newDoc = { ...data, createdAt: new Date() };
+        const now = new Date();
+        const newDoc = { ...data, createdAt: now, updatedAt: now };
         await adminDb.collection('products').add(newDoc);
         revalidatePath('/master-data/products');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+// --- Membership Types ---
+
+export async function getMembershipTypes() {
+    try {
+        if (!adminDb) return [];
+        const snapshot = await adminDb.collection('membershipTypes').orderBy('createdAt', 'desc').get();
+        return snapshot.docs.map(doc => {
+            const data = doc.data();
+            const serialized = { id: doc.id, ...data };
+            if (data.createdAt) serialized.createdAt = data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt);
+            if (data.updatedAt) serialized.updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt instanceof Date ? data.updatedAt.toISOString() : data.updatedAt);
+            return serialized;
+        });
+    } catch (error) {
+        console.error('Error fetching membership types:', error);
+        return [];
+    }
+}
+
+export async function getMembershipType(id) {
+    try {
+        if (!adminDb || !id) return null;
+        const docRef = await adminDb.collection('membershipTypes').doc(id).get();
+        if (!docRef.exists) return null;
+        const data = docRef.data();
+        const serialized = { id: docRef.id, ...data };
+        if (data.createdAt) serialized.createdAt = data.createdAt?.toDate ? data.createdAt.toDate().toISOString() : (data.createdAt instanceof Date ? data.createdAt.toISOString() : data.createdAt);
+        if (data.updatedAt) serialized.updatedAt = data.updatedAt?.toDate ? data.updatedAt.toDate().toISOString() : (data.updatedAt instanceof Date ? data.updatedAt.toISOString() : data.updatedAt);
+        return serialized;
+    } catch (error) {
+        console.error('Error fetching membership type:', error);
+        return null;
+    }
+}
+
+export async function createMembershipType(data) {
+    try {
+        if (!adminDb) throw new Error("Database not initialized");
+        if (!data.name || !String(data.name).trim()) return { success: false, error: 'Nama membership harus diisi' };
+        const price = parseFloat(data.price);
+        if (isNaN(price) || price < 0) return { success: false, error: 'Harga harus angka >= 0' };
+        const durationMonths = parseInt(data.durationMonths, 10);
+        if (isNaN(durationMonths) || durationMonths < 1) return { success: false, error: 'Durasi (bulan) minimal 1' };
+        const now = new Date();
+        const newDoc = {
+            name: String(data.name).trim(),
+            price,
+            durationMonths,
+            description: data.description ? String(data.description).trim() : '',
+            status: data.status || 'active',
+            createdAt: now,
+            updatedAt: now,
+        };
+        await adminDb.collection('membershipTypes').add(newDoc);
+        revalidatePath('/master-data/membership-types');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+export async function updateMembershipType(id, data) {
+    try {
+        if (!adminDb || !id) return { success: false, error: 'ID tidak valid' };
+        if (!data.name || !String(data.name).trim()) return { success: false, error: 'Nama membership harus diisi' };
+        const price = parseFloat(data.price);
+        if (isNaN(price) || price < 0) return { success: false, error: 'Harga harus angka >= 0' };
+        const durationMonths = parseInt(data.durationMonths, 10);
+        if (isNaN(durationMonths) || durationMonths < 1) return { success: false, error: 'Durasi (bulan) minimal 1' };
+        await adminDb.collection('membershipTypes').doc(id).update({
+            name: String(data.name).trim(),
+            price,
+            durationMonths,
+            description: data.description ? String(data.description).trim() : '',
+            status: data.status || 'active',
+            updatedAt: new Date(),
+        });
+        revalidatePath('/master-data/membership-types');
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };

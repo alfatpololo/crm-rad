@@ -13,9 +13,12 @@ export default function PaymentStatusContent() {
     const statusParam = searchParams.get('status')
     const [paymentStatus, setPaymentStatus] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [verifyError, setVerifyError] = useState(null)
+    const [retryCount, setRetryCount] = useState(0)
 
     useEffect(() => {
         const verifyPayment = async () => {
+            setVerifyError(null)
             if (!orderId) {
                 Swal.fire('Error', 'Order ID tidak ditemukan', 'error').then(() => {
                     router.push('/services')
@@ -33,7 +36,7 @@ export default function PaymentStatusContent() {
                     // If payment is successful, complete the purchase
                     if (result.transactionStatus === 'settlement' || result.transactionStatus === 'capture') {
                         const completeResult = await completePurchase(orderId)
-                        
+
                         if (completeResult.success) {
                             Swal.fire({
                                 icon: 'success',
@@ -52,6 +55,8 @@ export default function PaymentStatusContent() {
                                     router.push('/services')
                                 }
                             })
+                        } else {
+                            setVerifyError(completeResult.error || 'Gagal menyelesaikan pembelian. Silakan coba lagi.')
                         }
                     } else if (result.transactionStatus === 'pending') {
                         Swal.fire({
@@ -83,18 +88,26 @@ export default function PaymentStatusContent() {
                         })
                     }
                 } else {
-                    Swal.fire('Error', result.error || 'Gagal memverifikasi pembayaran', 'error')
+                    const isNetworkError = (result.error || '').toLowerCase().includes('koneksi terganggu') || (result.error || '').toLowerCase().includes('fetch')
+                    setVerifyError(result.error || 'Gagal memverifikasi pembayaran')
+                    if (!isNetworkError) {
+                        Swal.fire('Error', result.error || 'Gagal memverifikasi pembayaran', 'error')
+                    }
                 }
             } catch (error) {
                 console.error('Error verifying payment:', error)
-                Swal.fire('Error', 'Terjadi kesalahan saat memverifikasi pembayaran', 'error')
+                const isNetworkError = error?.message?.toLowerCase().includes('fetch') || error?.name === 'TypeError'
+                setVerifyError(isNetworkError ? 'Koneksi terganggu. Silakan coba lagi.' : 'Terjadi kesalahan saat memverifikasi pembayaran.')
+                if (!isNetworkError) {
+                    Swal.fire('Error', 'Terjadi kesalahan saat memverifikasi pembayaran', 'error')
+                }
             } finally {
                 setLoading(false)
             }
         }
 
         verifyPayment()
-    }, [orderId, router])
+    }, [orderId, router, retryCount])
 
     if (loading) {
         return (
@@ -104,6 +117,42 @@ export default function PaymentStatusContent() {
                         <span className="visually-hidden">Loading...</span>
                     </div>
                     <p>Memverifikasi pembayaran...</p>
+                </div>
+            </div>
+        )
+    }
+
+    if (verifyError) {
+        return (
+            <div className="container py-5">
+                <div className="row justify-content-center">
+                    <div className="col-md-6">
+                        <div className="card border-0 shadow-sm">
+                            <div className="card-body text-center p-5">
+                                <div className="mb-4">
+                                    <i className="bi bi-wifi-off text-warning" style={{ fontSize: '4rem' }}></i>
+                                </div>
+                                <h4 className="fw-bold mb-3">Koneksi Terganggu</h4>
+                                <p className="text-muted mb-4">{verifyError}</p>
+                                <div className="d-flex gap-2 justify-content-center flex-wrap">
+                                    <button
+                                        type="button"
+                                        className="btn btn-primary"
+                                        onClick={() => {
+                                            setVerifyError(null)
+                                            setLoading(true)
+                                            setRetryCount((c) => c + 1)
+                                        }}
+                                    >
+                                        Coba Lagi
+                                    </button>
+                                    <Link href="/services" className="btn btn-outline-secondary">
+                                        Kembali ke Layanan
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         )

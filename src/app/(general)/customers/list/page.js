@@ -5,21 +5,20 @@ import PageHeader from '@/components/shared/pageHeader/PageHeader'
 import React from 'react'
 import { getParticipants } from '@/actions/participants'
 import { customerListStatusOptions, customerListTagsOptions } from "@/utils/options"
+import { serializeForClient } from '@/utils/serialization'
 
 export const dynamic = 'force-dynamic'
 
 const page = async () => {
     const participants = await getParticipants();
 
-    // Transform Firestore data to match Table expectation
     const tableData = participants.map(p => ({
         id: p.id,
         customer: {
             name: p.name || 'Unknown',
-            img: '' // Placeholder or p.photoUrl if exists
+            img: ''
         },
         email: p.email,
-        // Mocking group tags for now as they are complex UI objects
         group: {
             tags: customerListTagsOptions,
             defaultSelect: []
@@ -32,6 +31,8 @@ const page = async () => {
         }
     }));
 
+    const safeData = serializeForClient(tableData)
+
     return (
         <>
             <PageHeader>
@@ -39,7 +40,7 @@ const page = async () => {
             </PageHeader>
             <div className='main-content'>
                 <div className='row'>
-                    <CustomersTable data={tableData} />
+                    <CustomersTable data={safeData} />
                 </div>
             </div>
             <Footer />

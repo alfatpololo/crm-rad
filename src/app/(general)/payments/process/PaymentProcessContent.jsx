@@ -10,6 +10,8 @@ export default function PaymentProcessContent() {
     const searchParams = useSearchParams()
     const [snapToken, setSnapToken] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [loadError, setLoadError] = useState(null)
+    const [retryCount, setRetryCount] = useState(0)
     const orderId = searchParams.get('orderId')
     const redirectUrl = searchParams.get('redirectUrl')
 
@@ -33,29 +35,37 @@ export default function PaymentProcessContent() {
             return
         }
 
-        // Fetch payment token from invoice
-        const fetchPaymentToken = async () => {
+        const maxAttempts = 3
+        const fetchPaymentToken = async (attempt = 1) => {
+            if (attempt === 1) setLoadError(null)
             try {
                 const response = await fetch(`/api/payments/token?orderId=${orderId}`)
                 const data = await response.json()
-                
+
                 if (data.success && data.token) {
                     setSnapToken(data.token)
-                } else {
-                    throw new Error(data.error || 'Failed to get payment token')
+                    return
                 }
+                throw new Error(data.error || 'Gagal memuat token pembayaran')
             } catch (error) {
                 console.error('Error fetching payment token:', error)
-                Swal.fire('Error', 'Gagal memuat halaman pembayaran', 'error').then(() => {
-                    router.push('/services')
-                })
+                const isNetworkError = error?.message === 'Failed to fetch' || error?.name === 'TypeError'
+                if (isNetworkError && attempt < maxAttempts) {
+                    await new Promise((r) => setTimeout(r, 1000 * attempt))
+                    return fetchPaymentToken(attempt + 1)
+                }
+                setLoadError(
+                    isNetworkError || error?.message?.toLowerCase().includes('fetch')
+                        ? 'Koneksi terganggu. Silakan coba lagi.'
+                        : (error?.message || 'Gagal memuat halaman pembayaran')
+                )
             } finally {
                 setLoading(false)
             }
         }
 
         fetchPaymentToken()
-    }, [orderId, redirectUrl, router])
+    }, [orderId, redirectUrl, router, retryCount])
 
     const handleSnapScriptLoad = () => {
         if (window.snap && snapToken) {
@@ -96,6 +106,11 @@ export default function PaymentProcessContent() {
 
     return (
         <>
+            {!isProduction && (
+                <div className="alert alert-warning rounded-0 mb-0 border-0 shadow-sm" role="alert" style={{ fontSize: '13px' }}>
+                    <strong>Mode uji (Sandbox).</strong> QRIS / GoPay / OVO yang muncul <strong>tidak bisa dibayar dengan aplikasi e-wallet asli</strong>. Untuk testing, gunakan simulator Midtrans atau aktivasi akun Production untuk pembayaran sungguhan.
+                </div>
+            )}
             <div className="d-flex justify-content-center align-items-center" style={{ minHeight: '100vh' }}>
                 <div className="text-center">
                     {loading ? (
@@ -112,6 +127,30 @@ export default function PaymentProcessContent() {
                             </div>
                             <p>Membuka halaman pembayaran...</p>
                         </>
+                    ) : loadError ? (
+                        <div className="text-center">
+                            <p className="text-danger mb-3">{loadError}</p>
+                            <div className="d-flex gap-2 justify-content-center flex-wrap">
+                                <button
+                                    type="button"
+                                    className="btn btn-primary"
+                                    onClick={() => {
+                                        setLoadError(null)
+                                        setLoading(true)
+                                        setRetryCount((c) => c + 1)
+                                    }}
+                                >
+                                    Coba Lagi
+                                </button>
+                                <button
+                                    type="button"
+                                    className="btn btn-outline-secondary"
+                                    onClick={() => router.push('/services')}
+                                >
+                                    Kembali ke Layanan
+                                </button>
+                            </div>
+                        </div>
                     ) : (
                         <p>Gagal memuat token pembayaran</p>
                     )}

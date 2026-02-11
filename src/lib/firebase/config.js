@@ -15,6 +15,13 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
+// Cek saat development: kalau env belum di-set, kasih pesan jelas (bukan invalid-api-key)
+if (typeof window !== "undefined" && !firebaseConfig.apiKey) {
+  console.error(
+    "[Firebase] Config belum di-set. Buat file .env.local dari .env.local.example dan isi dengan credential dari Firebase Console."
+  );
+}
+
 // Initialize Firebase (Singleton pattern)
 const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
 

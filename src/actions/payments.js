@@ -71,18 +71,16 @@ export async function completePurchase(orderId) {
         const participantData = participantDoc.data();
         const enrolledClasses = participantData.enrolledClasses || [];
 
-        // Check if already enrolled (prevent duplicate)
+        // Only add to enrolledClasses for class/service purchases (not product/merch)
         const serviceId = invoiceData.serviceId;
-        const isAlreadyEnrolled = enrolledClasses.some(cls => cls.id === serviceId);
+        const isAlreadyEnrolled = serviceId && enrolledClasses.some(cls => cls.id === serviceId);
 
-        if (!isAlreadyEnrolled) {
+        if (serviceId && !isAlreadyEnrolled) {
             // Get service data
             let serviceData = null;
-            if (serviceId) {
-                const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
-                if (serviceDoc.exists) {
-                    serviceData = serviceDoc.data();
-                }
+            const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
+            if (serviceDoc.exists) {
+                serviceData = serviceDoc.data();
             }
 
             // Helper function to remove undefined values
@@ -131,6 +129,37 @@ export async function completePurchase(orderId) {
             });
         }
 
+        // Apply membership if invoice is for membership purchase/renewal
+        const membershipTypeId = invoiceData.membershipTypeId;
+        if (membershipTypeId) {
+            const typeDoc = await adminDb.collection('membershipTypes').doc(membershipTypeId).get();
+            if (typeDoc.exists) {
+                const typeData = typeDoc.data();
+                const durationMonths = parseInt(typeData.durationMonths, 10) || 1;
+                const participantSnapshot = await participantRef.get();
+                const currentData = participantSnapshot.exists ? participantSnapshot.data() : {};
+                const currentMembership = currentData.membership || {};
+                let baseDate = new Date();
+                const currentEnd = currentMembership.endDate;
+                if (currentEnd) {
+                    const end = currentEnd?.toDate ? currentEnd.toDate() : new Date(currentEnd);
+                    if (end > baseDate) baseDate = end; // perpanjang dari akhir periode saat ini
+                }
+                const newEnd = new Date(baseDate);
+                newEnd.setMonth(newEnd.getMonth() + durationMonths);
+                const membership = {
+                    typeId: membershipTypeId,
+                    typeName: typeData.name || 'Membership',
+                    endDate: newEnd,
+                    status: 'active',
+                };
+                await participantRef.update({
+                    membership,
+                    updatedAt: new Date(),
+                });
+            }
+        }
+
         // Update invoice status to 'paid'
         await adminDb.collection('invoices').doc(invoiceDoc.id).update({
             status: 'paid',
@@ -149,6 +178,123 @@ export async function completePurchase(orderId) {
     } catch (error) {
         console.error('Error completing purchase:', error);
         return { success: false, error: error.message || 'Failed to complete purchase' };
+    }
+}
+
+/**
+ * Get payment history for profile tab with real status from Midtrans.
+ * For invoices with orderId, fetches current transaction status from Midtrans and syncs to Firestore.
+ * @param {string} [clientEmail] - Email dari client (useAuth) sebagai fallback jika session kosong
+ */
+export async function getPaymentHistoryForProfile(clientEmail) {
+    try {
+        const user = await getSessionUser();
+        const email = user?.email || clientEmail || null;
+        if (!email) {
+            return { success: false, error: 'Not authenticated', payments: [] };
+        }
+
+        let invoicesSnapshot;
+        try {
+            invoicesSnapshot = await adminDb
+                .collection('invoices')
+                .where('client.email', '==', email)
+                .orderBy('createdAt', 'desc')
+                .limit(50)
+                .get();
+        } catch (indexError) {
+            try {
+                invoicesSnapshot = await adminDb
+                    .collection('invoices')
+                    .where('client.email', '==', email)
+                    .orderBy('issueDate', 'desc')
+                    .limit(50)
+                    .get();
+            } catch (indexError2) {
+                // Tanpa orderBy (tidak butuh composite index), sort di memory
+                invoicesSnapshot = await adminDb
+                    .collection('invoices')
+                    .where('client.email', '==', email)
+                    .limit(100)
+                    .get();
+            }
+        }
+
+        const payments = [];
+        const { checkMidtransPaymentStatus: checkMidtrans } = await import('./midtrans');
+
+        const docs = [...invoicesSnapshot.docs].sort((a, b) => {
+            const aData = a.data();
+            const bData = b.data();
+            const aTime = aData.createdAt?.toDate?.()?.getTime?.() ?? aData.issueDate?.toDate?.()?.getTime?.() ?? 0;
+            const bTime = bData.createdAt?.toDate?.()?.getTime?.() ?? bData.issueDate?.toDate?.()?.getTime?.() ?? 0;
+            return bTime - aTime;
+        });
+
+        for (const doc of docs) {
+            const data = doc.data();
+            const createdAt = data.createdAt?.toDate?.()?.toISOString?.() || data.issueDate?.toDate?.()?.toISOString?.() || null;
+            let status = data.status;
+            let paymentStatus = data.paymentStatus || null;
+
+            // Ambil status real dari Midtrans untuk invoice yang punya orderId (terutama yang masih pending)
+            if (data.orderId) {
+                const needsRefresh = !paymentStatus || status === 'pending' || status === 'unpaid';
+                if (needsRefresh) {
+                    const result = await checkMidtrans(data.orderId);
+                    if (result.success && result.transactionStatus) {
+                        paymentStatus = result.transactionStatus;
+                        if (paymentStatus === 'settlement' || paymentStatus === 'capture') {
+                            status = 'paid';
+                            const completeResult = await completePurchase(data.orderId);
+                            if (!completeResult.success) {
+                                await adminDb.collection('invoices').doc(doc.id).update({
+                                    status: 'paid',
+                                    paymentStatus: paymentStatus,
+                                    paidDate: new Date(),
+                                    updatedAt: new Date(),
+                                });
+                            }
+                        } else if (paymentStatus === 'deny' || paymentStatus === 'cancel' || paymentStatus === 'expire') {
+                            status = status || 'failed';
+                            await adminDb.collection('invoices').doc(doc.id).update({
+                                paymentStatus: paymentStatus,
+                                updatedAt: new Date(),
+                            });
+                        } else {
+                            await adminDb.collection('invoices').doc(doc.id).update({
+                                paymentStatus: paymentStatus,
+                                updatedAt: new Date(),
+                            });
+                        }
+                    }
+                }
+            }
+
+            payments.push({
+                id: doc.id,
+                invoiceNumber: data.invoiceNumber,
+                orderId: data.orderId,
+                serviceId: data.serviceId,
+                serviceName: data.items?.[0]?.name || data.serviceName || data.itemName,
+                items: data.items,
+                grandTotal: data.grandTotal,
+                amount: data.amount,
+                status,
+                paymentStatus,
+                paymentMethod: data.paymentMethod || 'midtrans',
+                createdAt,
+                issueDate: data.issueDate?.toDate?.()?.toISOString?.() || null,
+                dueDate: data.dueDate?.toDate?.()?.toISOString?.() || null,
+                paidDate: data.paidDate?.toDate?.()?.toISOString?.() || null,
+                client: data.client,
+            });
+        }
+
+        return { success: true, payments };
+    } catch (error) {
+        console.error('Error getPaymentHistoryForProfile:', error);
+        return { success: false, error: error.message, payments: [] };
     }
 }
 

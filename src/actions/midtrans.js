@@ -5,6 +5,39 @@
  * Create payment transaction using Midtrans Snap
  */
 
+const RETRY_DELAYS_MS = [1000, 2000, 3000];
+const MAX_RETRIES = 3;
+
+/**
+ * Fetch with retry on network error or 5xx (transient errors)
+ * @param {string} url
+ * @param {RequestInit} init - body must be string so it can be reused on retry
+ * @returns {Promise<Response>}
+ */
+async function fetchWithRetry(url, init) {
+    let lastError;
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        try {
+            const res = await fetch(url, init);
+            if (res.ok) return res;
+            if (res.status >= 400 && res.status < 500) return res; // jangan retry 4xx
+            if (res.status >= 500 && attempt < MAX_RETRIES - 1) {
+                await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+                continue;
+            }
+            return res;
+        } catch (err) {
+            lastError = err;
+            if (attempt < MAX_RETRIES - 1) {
+                await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+            } else {
+                throw lastError;
+            }
+        }
+    }
+    throw lastError;
+}
+
 /**
  * Generate Snap Token for payment
  * @param {Object} orderDetails - Order details { orderId, amount, items, customer }
@@ -22,7 +55,9 @@ export async function createMidtransTransaction(orderDetails) {
         // Base64 encode server key for authorization
         const auth = Buffer.from(serverKey + ':').toString('base64');
 
-        // Prepare transaction payload
+        const terms = Array.isArray(orderDetails.installmentTerms) && orderDetails.installmentTerms.length
+            ? orderDetails.installmentTerms
+            : [3, 4, 5, 6, 12];
         const transactionDetails = {
             transaction_details: {
                 order_id: orderDetails.orderId,
@@ -35,10 +70,24 @@ export async function createMidtransTransaction(orderDetails) {
                 email: orderDetails.customer.email || '',
                 phone: orderDetails.customer.phone || '',
             },
+            credit_card: {
+                installment: {
+                    required: false,
+                    terms: {
+                        bni: terms,
+                        mandiri: terms,
+                        bca: terms,
+                        cimb: terms,
+                        bri: terms,
+                        maybank: terms,
+                        offline: terms,
+                    },
+                },
+            },
             callbacks: {
-                finish: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payments/status`,
-                error: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payments/status`,
-                pending: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payments/status`,
+                finish: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payments/status?orderId=${encodeURIComponent(orderDetails.orderId)}`,
+                error: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payments/status?orderId=${encodeURIComponent(orderDetails.orderId)}&status=error`,
+                pending: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/payments/status?orderId=${encodeURIComponent(orderDetails.orderId)}&status=pending`,
             },
         };
 
@@ -47,15 +96,16 @@ export async function createMidtransTransaction(orderDetails) {
             ? 'https://app.midtrans.com/snap/v1/transactions'
             : 'https://app.sandbox.midtrans.com/snap/v1/transactions';
 
-        // Create transaction
-        const response = await fetch(apiUrl, {
+        // Create transaction (dengan retry jika network/5xx)
+        const bodyStr = JSON.stringify(transactionDetails);
+        const response = await fetchWithRetry(apiUrl, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json',
                 'Authorization': `Basic ${auth}`,
             },
-            body: JSON.stringify(transactionDetails),
+            body: bodyStr,
         });
 
         if (!response.ok) {
@@ -76,7 +126,13 @@ export async function createMidtransTransaction(orderDetails) {
         };
     } catch (error) {
         console.error('Error creating Midtrans transaction:', error);
-        return { success: false, error: error.message || 'Failed to create payment transaction' };
+        const isNetworkError = error?.message?.toLowerCase().includes('fetch') || error?.name === 'TypeError';
+        return {
+            success: false,
+            error: isNetworkError
+                ? 'Koneksi terganggu. Silakan coba lagi.'
+                : (error.message || 'Gagal membuat transaksi pembayaran'),
+        };
     }
 }
 
@@ -100,7 +156,7 @@ export async function checkMidtransPaymentStatus(orderId) {
             ? `https://api.midtrans.com/v2/${orderId}/status`
             : `https://api.sandbox.midtrans.com/v2/${orderId}/status`;
 
-        const response = await fetch(apiUrl, {
+        const response = await fetchWithRetry(apiUrl, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
@@ -109,10 +165,10 @@ export async function checkMidtransPaymentStatus(orderId) {
         });
 
         if (!response.ok) {
-            const errorData = await response.json();
-            return { 
-                success: false, 
-                error: errorData.error_messages?.join(', ') || 'Failed to check payment status' 
+            const errorData = await response.json().catch(() => ({}));
+            return {
+                success: false,
+                error: errorData.error_messages?.join(', ') || 'Gagal memeriksa status pembayaran',
             };
         }
 
@@ -129,7 +185,13 @@ export async function checkMidtransPaymentStatus(orderId) {
         };
     } catch (error) {
         console.error('Error checking Midtrans payment status:', error);
-        return { success: false, error: error.message || 'Failed to check payment status' };
+        const isNetworkError = error?.message?.toLowerCase().includes('fetch') || error?.name === 'TypeError';
+        return {
+            success: false,
+            error: isNetworkError
+                ? 'Koneksi terganggu. Silakan coba lagi.'
+                : (error.message || 'Gagal memeriksa status pembayaran'),
+        };
     }
 }
 

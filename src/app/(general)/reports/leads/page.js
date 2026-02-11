@@ -10,8 +10,10 @@ import LeadsStatistics from '@/components/widgetsStatistics/LeadsStatistics'
 import LeadsStatusTwo from '@/components/widgetsTables/LeadsStatusTwo'
 import { upcomingEventsData } from '@/utils/fackData/upcomingEventsData'
 import React from 'react'
+import { serializeForClient } from '@/utils/serialization'
 
 const page = () => {
+    const safeUpcoming = serializeForClient(upcomingEventsData.slice(0, 3))
     return (
         <>
             <PageHeader >
@@ -23,7 +25,7 @@ const page = () => {
                     <InquiryTrackingChart />
                     <InquiryChannelChart />
                     <LeadsStatusTwo />
-                    <ScheduleTwo title={"Upcoming Events"} data={upcomingEventsData.slice(0, 3)} />
+                    <ScheduleTwo title={"Upcoming Events"} data={safeUpcoming} />
                     <ProjectLeads />
                 </div>
             </div>

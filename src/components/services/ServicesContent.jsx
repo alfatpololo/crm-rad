@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
 import Image from 'next/image'
+import { getApplicablePriceTier, getPromoDiscount } from '@/utils/servicePrice'
 
 const ServicesContent = () => {
     const { user } = useAuth()
@@ -193,9 +194,24 @@ const ServicesContent = () => {
                 return
             }
 
-            const isFree = service.isFree || parseFloat(service.price || 0) === 0
-            
-            // Show confirmation dialog
+            const tier = getApplicablePriceTier(service)
+            const isFree = tier.isFree
+            const promoResult = getPromoDiscount(service, tier.price, '', new Date())
+            const displayPrice = promoResult.applied ? promoResult.finalPrice : tier.price
+            const tierLabel = tier.label ? ` (${tier.label})` : ''
+            const cicilanText = tier.installmentTerms?.length ? tier.installmentTerms.map(x => x + 'x').join(', ') : '3x, 4x, 6x, 12x'
+            const minDpText = tier.minDp != null && tier.minDp > 0 ? `<p class="small text-muted mb-0">Min. DP: <strong>Rp ${Number(tier.minDp).toLocaleString('id-ID')}</strong></p>` : ''
+            const hasPromoCode = service.promo?.enabled && service.promo?.code && String(service.promo.code).trim() !== ''
+            const promoHtml = !isFree && hasPromoCode
+                ? `<p class="small mb-2">Kode promo: <input type="text" id="promo-code-input" class="form-control form-control-sm d-inline-block" style="width:120px" placeholder="${service.promo.code ? 'Masukkan kode' : ''}" /></p>`
+                : ''
+            const priceHtml = !isFree
+                ? (hasPromoCode
+                    ? `<p class="mb-2">Harga${tierLabel}: <strong class="text-primary">Rp ${Number(tier.price).toLocaleString('id-ID')}</strong> (masukkan kode untuk diskon)</p>${promoHtml}`
+                    : promoResult.applied
+                        ? `<p class="mb-2">${promoResult.promoLabel ? `<span class="badge bg-success me-2">${promoResult.promoLabel}</span>` : ''} Harga${tierLabel}: <s class="text-muted">Rp ${Number(tier.price).toLocaleString('id-ID')}</s> <strong class="text-primary">Rp ${Number(displayPrice).toLocaleString('id-ID')}</strong></p>`
+                        : `<p class="mb-2">Harga${tierLabel}: <strong class="text-primary">Rp ${Number(displayPrice).toLocaleString('id-ID')}</strong></p>`)
+                : ''
             const result = await Swal.fire({
                 icon: 'question',
                 title: isFree ? 'Daftar Kelas Gratis?' : 'Beli Kelas?',
@@ -206,8 +222,9 @@ const ServicesContent = () => {
                             `<p class="mb-2">Harga: <strong class="text-success">GRATIS</strong></p>
                              <p class="small text-muted mb-0">Kelas ini gratis, Anda akan langsung terdaftar tanpa perlu pembayaran.</p>`
                         ) : (
-                            `<p class="mb-2">Harga: <strong class="text-primary">Rp ${parseFloat(service.price || 0).toLocaleString('id-ID')}</strong></p>
-                             <p class="small text-muted mb-0">Setelah pembayaran berhasil, kelas akan otomatis ditambahkan ke akun Anda.</p>`
+                            `${priceHtml}
+                             ${minDpText}
+                             <p class="small text-muted mb-0">Pembayaran via Midtrans (tunai atau cicilan ${cicilanText}). Setelah pembayaran berhasil, kelas akan ditambahkan ke akun Anda.</p>`
                         )}
                     </div>
                 `,
@@ -220,7 +237,8 @@ const ServicesContent = () => {
 
             if (!result.isConfirmed) return
 
-            // Show loading
+            const promoCode = typeof document !== 'undefined' ? (document.getElementById('promo-code-input')?.value || '') : ''
+
             Swal.fire({
                 title: 'Memproses...',
                 text: 'Sedang membeli kelas...',
@@ -230,10 +248,8 @@ const ServicesContent = () => {
                 }
             })
 
-            // Import purchaseClass action
             const { purchaseClass } = await import('@/actions/participants')
-            
-            const purchaseResult = await purchaseClass(service.id, service)
+            const purchaseResult = await purchaseClass(service.id, service, { promoCode })
 
             if (purchaseResult.success) {
                 // If free class, show success and refresh
@@ -440,15 +456,43 @@ const ServicesContent = () => {
                                             <div className="border-top pt-3 d-flex align-items-center justify-content-between">
                                                 <div>
                                                     <p className="text-muted small mb-0">Harga</p>
-                                                    {(service.isFree || parseFloat(service.price || 0) === 0) ? (
-                                                        <h5 className="fw-bold mb-0 text-success">
-                                                            GRATIS
-                                                        </h5>
-                                                    ) : (
-                                                        <h5 className="fw-bold mb-0 text-primary">
-                                                            Rp {parseFloat(service.price || 0).toLocaleString('id-ID')}
-                                                        </h5>
-                                                    )}
+                                                    {(() => {
+                                                        const t = getApplicablePriceTier(service)
+                                                        const promoResult = getPromoDiscount(service, t.price, '', new Date())
+                                                        const hasPromoCode = service.promo?.enabled && service.promo?.code && String(service.promo.code).trim() !== ''
+                                                        if (t.isFree) {
+                                                            return <h5 className="fw-bold mb-0 text-success">GRATIS</h5>
+                                                        }
+                                                        if (promoResult.applied) {
+                                                            return (
+                                                                <div>
+                                                                    {promoResult.promoLabel && <span className="badge bg-success me-1 mb-1">{promoResult.promoLabel}</span>}
+                                                                    <h5 className="fw-bold mb-0 text-primary">
+                                                                        <s className="text-muted fw-normal small me-1">Rp {Number(t.price).toLocaleString('id-ID')}</s>
+                                                                        Rp {Number(promoResult.finalPrice).toLocaleString('id-ID')}
+                                                                        {t.label && <span className="text-muted small"> ({t.label})</span>}
+                                                                    </h5>
+                                                                </div>
+                                                            )
+                                                        }
+                                                        if (hasPromoCode) {
+                                                            return (
+                                                                <div>
+                                                                    <span className="badge bg-soft-warning text-warning small mb-1">Pakai kode promo</span>
+                                                                    <h5 className="fw-bold mb-0 text-primary">
+                                                                        Rp {Number(t.price).toLocaleString('id-ID')}
+                                                                        {t.label && <span className="text-muted small"> ({t.label})</span>}
+                                                                    </h5>
+                                                                </div>
+                                                            )
+                                                        }
+                                                        return (
+                                                            <h5 className="fw-bold mb-0 text-primary">
+                                                                Rp {Number(t.price).toLocaleString('id-ID')}
+                                                                {t.label && <span className="text-muted small"> ({t.label})</span>}
+                                                            </h5>
+                                                        )
+                                                    })()}
                                                 </div>
                                                 {isEnrolled(service.id) ? (
                                                     <span className="badge bg-soft-success text-success px-3 py-2">

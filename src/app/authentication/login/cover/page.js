@@ -1,6 +1,6 @@
 import LoginForm from '@/components/authentication/LoginForm'
 import Image from 'next/image'
-import React from 'react'
+import React, { Suspense } from 'react'
 
 const page = () => {
     return (
@@ -18,7 +18,9 @@ const page = () => {
                         <div className="wd-50 mb-5">
                             <img src="/images/logo/logo-rad-e1768539218966.webp" alt='img' className="img-fluid" />
                         </div>
-                        <LoginForm registerPath={"/authentication/register/cover"} resetPath={"/authentication/reset/cover"} />
+                        <Suspense fallback={<div className="text-center py-4"><span className="spinner-border spinner-border-sm" /></div>}>
+                            <LoginForm registerPath={"/authentication/register/cover"} resetPath={"/authentication/reset/cover"} />
+                        </Suspense>
                     </div>
                 </div>
             </div>

@@ -3,12 +3,14 @@ import Link from 'next/link'
 import React, { useState } from 'react'
 import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from 'firebase/auth'
 import { auth } from '@/lib/firebase/config'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Swal from 'sweetalert2'
 import { createSession, createUserDocument } from '@/actions/auth'
 
 const LoginForm = ({ registerPath, resetPath }) => {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const redirectTo = searchParams.get('redirect') || '/dashboard'
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -60,7 +62,7 @@ const LoginForm = ({ registerPath, resetPath }) => {
                 showConfirmButton: false,
                 timer: 1500
             })
-            router.push('/') // Redirect to dashboard
+            router.push(redirectTo)
         } catch (error) {
             console.error('❌ Login error:', error)
             Swal.fire({
@@ -117,7 +119,7 @@ const LoginForm = ({ registerPath, resetPath }) => {
                 timer: 1500
             })
             
-            router.push('/')
+            router.push(redirectTo)
         } catch (error) {
             console.error('Google sign in error:', error)
             Swal.fire({

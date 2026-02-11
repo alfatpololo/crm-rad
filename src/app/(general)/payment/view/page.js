@@ -4,6 +4,7 @@ import Footer from '@/components/shared/Footer'
 import InvoiceView from '@/components/payment/InvoiceView'
 import { getInvoice } from '@/actions/invoices'
 import { notFound } from 'next/navigation'
+import { serializeForClient } from '@/utils/serialization'
 
 export const dynamic = 'force-dynamic'
 
@@ -20,6 +21,8 @@ const InvoiceViewPage = async ({ searchParams }) => {
     notFound()
   }
 
+  const safeInvoice = serializeForClient(invoice)
+
   return (
     <>
       <PageHeader>
@@ -29,7 +32,7 @@ const InvoiceViewPage = async ({ searchParams }) => {
       </PageHeader>
       <div className='main-content container-lg'>
         <div className='row'>
-          <InvoiceView invoice={invoice} />
+          <InvoiceView invoice={safeInvoice} />
         </div>
       </div>
       <Footer />

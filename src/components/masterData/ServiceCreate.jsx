@@ -7,12 +7,17 @@ import useCloudinaryUpload from '@/hooks/useCloudinaryUpload'
 import { FiUpload, FiX, FiImage } from 'react-icons/fi'
 import Image from 'next/image'
 
+const defaultTier = () => ({ label: '', price: '', minDp: '', installmentTerms: '3, 4, 5' })
+
 const ServiceCreate = () => {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
-    const [type, setType] = useState('') // Will be set from service types
+    const [type, setType] = useState('')
     const [categories, setCategories] = useState([])
     const [serviceTypes, setServiceTypes] = useState([])
+    const [usePriceTiers, setUsePriceTiers] = useState(false)
+    const [priceTiers, setPriceTiers] = useState([defaultTier()])
+    const [promo, setPromo] = useState({ enabled: false, type: 'percent', value: '', code: '', label: '', startDate: '', endDate: '' })
     const fileInputRef = useRef(null)
     
     // Cloudinary upload hook
@@ -107,28 +112,22 @@ const ServiceCreate = () => {
         setLoading(true)
         const formData = new FormData(e.target)
 
-        const startDateStr = formData.get('startDate')
-        const endDateStr = formData.get('endDate')
+        const startDateStr = formData.get('startDate') || null
+        const endDateStr = formData.get('endDate') || null
         const isFreeChecked = formData.get('isFree') === 'on'
         const priceValue = parseFloat(formData.get('price') || 0)
         const isFree = isFreeChecked || priceValue === 0
         const price = isFree ? 0 : priceValue
+        const useTiers = usePriceTiers && priceTiers.length > 0
 
-        // Validate dates (required for both class and event)
-        if (!startDateStr || !endDateStr) {
-            Swal.fire('Error', 'Tanggal mulai dan akhir harus diisi', 'error')
-            setLoading(false)
-            return
-        }
-        
-        if (new Date(endDateStr) < new Date(startDateStr)) {
-            Swal.fire('Error', 'Tanggal akhir tidak boleh lebih awal dari tanggal mulai', 'error')
-            setLoading(false)
-            return
-        }
-
-        // Validate price only if not free
-        if (!isFree && (!price || price <= 0)) {
+        if (useTiers) {
+            const tiersToSend = priceTiers.filter(t => t.label.trim())
+            if (tiersToSend.length === 0) {
+                Swal.fire('Error', 'Minimal satu tier harga harus diisi (label + harga)', 'error')
+                setLoading(false)
+                return
+            }
+        } else if (!isFree && (!price || price <= 0)) {
             Swal.fire('Error', 'Harga harus diisi dan lebih dari 0', 'error')
             setLoading(false)
             return
@@ -200,12 +199,31 @@ const ServiceCreate = () => {
             category: formData.get('category') || '',
             capacity: parseInt(formData.get('capacity') || 0),
             instructor: formData.get('instructor') || '',
-            startDate: startDateStr,
-            endDate: endDateStr,
+            startDate: startDateStr || null,
+            endDate: endDateStr || null,
             location: formData.get('location') || '',
             status: formData.get('status') || 'active',
-            imageUrl: imageUrl || null, // Add image URL from Cloudinary
+            imageUrl: imageUrl || null,
+            installmentTerms: formData.get('installmentTerms') || '3, 4, 5',
+            minDp: formData.get('minDp') !== '' && formData.get('minDp') != null ? formData.get('minDp') : null,
         }
+        if (useTiers) {
+            data.priceTiers = priceTiers.filter(t => t.label.trim()).map(t => ({
+                label: t.label.trim(),
+                price: parseFloat(t.price) || 0,
+                minDp: t.minDp !== '' && t.minDp != null ? parseFloat(t.minDp) : null,
+                installmentTerms: t.installmentTerms || '3, 4, 5',
+            }))
+        }
+        data.promo = promo.enabled ? {
+            enabled: true,
+            type: promo.type,
+            value: parseFloat(promo.value) || 0,
+            code: promo.code.trim() || null,
+            label: promo.label.trim() || null,
+            startDate: promo.startDate || null,
+            endDate: promo.endDate || null,
+        } : { enabled: false }
 
         try {
             console.log('Submitting form with data:', data)
@@ -291,45 +309,174 @@ const ServiceCreate = () => {
                             </div>
                         </div>
                         <div className="row mb-4">
-                            <label className="col-md-4 col-form-label">Harga (Rp) <span className="text-danger" id="price-required-asterisk">*</span></label>
+                            <label className="col-md-4 col-form-label">Harga</label>
                             <div className="col-md-8">
-                                <input 
-                                    name="price" 
-                                    type="number" 
-                                    className="form-control" 
-                                    id="price-input-create"
-                                    min="0" 
-                                    placeholder="0" 
-                                />
-                                <div className="form-check mt-2">
-                                    <input 
-                                        className="form-check-input" 
-                                        type="checkbox" 
-                                        name="isFree"
-                                        id="isFree-checkbox-create"
-                                        onChange={(e) => {
-                                            const priceInput = document.getElementById('price-input-create')
-                                            const asterisk = document.getElementById('price-required-asterisk')
-                                            if (e.target.checked) {
-                                                priceInput.value = '0'
-                                                priceInput.required = false
-                                                priceInput.disabled = true
-                                                priceInput.removeAttribute('required')
-                                                priceInput.setAttribute('data-free', 'true')
-                                                if (asterisk) asterisk.style.display = 'none'
-                                            } else {
-                                                priceInput.required = true
-                                                priceInput.disabled = false
-                                                priceInput.setAttribute('required', 'required')
-                                                priceInput.removeAttribute('data-free')
-                                                if (asterisk) asterisk.style.display = 'inline'
-                                            }
-                                        }}
+                                <div className="form-check mb-3">
+                                    <input
+                                        type="checkbox"
+                                        className="form-check-input"
+                                        id="usePriceTiers-create"
+                                        checked={usePriceTiers}
+                                        onChange={(e) => setUsePriceTiers(e.target.checked)}
                                     />
-                                    <label className="form-check-label" htmlFor="isFree-checkbox-create">
-                                        Kelas Gratis (Bypass Payment)
+                                    <label className="form-check-label" htmlFor="usePriceTiers-create">
+                                        Gunakan tier harga (Early Bird, Presale, Normal, dll.)
                                     </label>
                                 </div>
+                                {!usePriceTiers && (
+                                    <>
+                                        <label className="form-label small text-muted">Harga tunggal (Rp) <span className="text-danger">*</span></label>
+                                        <input 
+                                            name="price" 
+                                            type="number" 
+                                            className="form-control" 
+                                            id="price-input-create"
+                                            min="0" 
+                                            placeholder="0" 
+                                        />
+                                        <div className="row g-2 mt-2">
+                                            <div className="col-md-6">
+                                                <label className="form-label small">Cicilan (berapa kali bayar)</label>
+                                                <input name="installmentTerms" type="text" className="form-control" placeholder="3, 4, 5" defaultValue="3, 4, 5" />
+                                                <small className="text-muted">Pisah dengan koma, misal: 3, 4, 5</small>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small">Min DP (Rp)</label>
+                                                <input name="minDp" type="number" className="form-control" min="0" placeholder="Opsional" />
+                                            </div>
+                                        </div>
+                                        <div className="form-check mt-2">
+                                            <input 
+                                                className="form-check-input" 
+                                                type="checkbox" 
+                                                name="isFree"
+                                                id="isFree-checkbox-create"
+                                                onChange={(e) => {
+                                                    const priceInput = document.getElementById('price-input-create')
+                                                    const asterisk = document.getElementById('price-required-asterisk')
+                                                    if (e.target.checked) {
+                                                        priceInput.value = '0'
+                                                        priceInput.required = false
+                                                        priceInput.disabled = true
+                                                        if (asterisk) asterisk.style.display = 'none'
+                                                    } else {
+                                                        priceInput.required = true
+                                                        priceInput.disabled = false
+                                                        if (asterisk) asterisk.style.display = 'inline'
+                                                    }
+                                                }}
+                                            />
+                                            <label className="form-check-label" htmlFor="isFree-checkbox-create">
+                                                Kelas Gratis (Bypass Payment)
+                                            </label>
+                                        </div>
+                                    </>
+                                )}
+                                {usePriceTiers && (
+                                    <div className="border rounded p-3 bg-light">
+                                        <p className="small text-muted mb-3">Setiap tier: nama, harga, cicilan (berapa kali bayar), dan minimal DP.</p>
+                                        {priceTiers.map((tier, idx) => (
+                                            <div key={idx} className="row g-2 mb-3 align-items-end">
+                                                <div className="col-md-2">
+                                                    <label className="form-label small">Nama Tier</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control form-control-sm"
+                                                        placeholder="e.g. Early Bird"
+                                                        value={tier.label}
+                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], label: e.target.value }; setPriceTiers(next) }}
+                                                    />
+                                                </div>
+                                                <div className="col-md-2">
+                                                    <label className="form-label small">Harga (Rp)</label>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control form-control-sm"
+                                                        min="0"
+                                                        placeholder="0"
+                                                        value={tier.price}
+                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], price: e.target.value }; setPriceTiers(next) }}
+                                                    />
+                                                </div>
+                                                <div className="col-md-2">
+                                                    <label className="form-label small">Cicilan (kali)</label>
+                                                    <input
+                                                        type="text"
+                                                        className="form-control form-control-sm"
+                                                        placeholder="3, 4, 5"
+                                                        value={tier.installmentTerms}
+                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], installmentTerms: e.target.value }; setPriceTiers(next) }}
+                                                    />
+                                                </div>
+                                                <div className="col-md-2">
+                                                    <label className="form-label small">Min DP (Rp)</label>
+                                                    <input
+                                                        type="number"
+                                                        className="form-control form-control-sm"
+                                                        min="0"
+                                                        placeholder="Opsional"
+                                                        value={tier.minDp}
+                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], minDp: e.target.value }; setPriceTiers(next) }}
+                                                    />
+                                                </div>
+                                                <div className="col-md-1">
+                                                    <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setPriceTiers(priceTiers.filter((_, i) => i !== idx))} disabled={priceTiers.length <= 1} title="Hapus tier">
+                                                        <FiX size={16} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setPriceTiers([...priceTiers, defaultTier()])}>
+                                            + Tambah Tier
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="row mb-4">
+                            <label className="col-md-4 col-form-label">Promo</label>
+                            <div className="col-md-8">
+                                <div className="form-check mb-3">
+                                    <input type="checkbox" className="form-check-input" id="promo-enable-create" checked={promo.enabled} onChange={(e) => setPromo(p => ({ ...p, enabled: e.target.checked }))} />
+                                    <label className="form-check-label" htmlFor="promo-enable-create">Aktifkan promo / diskon untuk kelas ini</label>
+                                </div>
+                                {promo.enabled && (
+                                    <div className="border rounded p-3 bg-light">
+                                        <div className="row g-2 mb-2">
+                                            <div className="col-md-6">
+                                                <label className="form-label small">Tipe diskon</label>
+                                                <select className="form-control form-control-sm" value={promo.type} onChange={(e) => setPromo(p => ({ ...p, type: e.target.value }))}>
+                                                    <option value="percent">Persentase (%)</option>
+                                                    <option value="fixed">Potongan harga (Rp)</option>
+                                                </select>
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small">{promo.type === 'percent' ? 'Diskon (%)' : 'Potongan (Rp)'}</label>
+                                                <input type="number" className="form-control form-control-sm" min="0" max={promo.type === 'percent' ? 100 : undefined} placeholder={promo.type === 'percent' ? '10' : '50000'} value={promo.value} onChange={(e) => setPromo(p => ({ ...p, value: e.target.value }))} />
+                                            </div>
+                                        </div>
+                                        <div className="row g-2 mb-2">
+                                            <div className="col-md-6">
+                                                <label className="form-label small">Nama promo (opsional)</label>
+                                                <input type="text" className="form-control form-control-sm" placeholder="e.g. Early Bird" value={promo.label} onChange={(e) => setPromo(p => ({ ...p, label: e.target.value }))} />
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small">Kode promo (kosong = otomatis untuk semua)</label>
+                                                <input type="text" className="form-control form-control-sm" placeholder="e.g. GRATIS50" value={promo.code} onChange={(e) => setPromo(p => ({ ...p, code: e.target.value.toUpperCase() }))} />
+                                            </div>
+                                        </div>
+                                        <div className="row g-2">
+                                            <div className="col-md-6">
+                                                <label className="form-label small">Masa berlaku mulai</label>
+                                                <input type="date" className="form-control form-control-sm" value={promo.startDate} onChange={(e) => setPromo(p => ({ ...p, startDate: e.target.value }))} />
+                                            </div>
+                                            <div className="col-md-6">
+                                                <label className="form-label small">Masa berlaku selesai</label>
+                                                <input type="date" className="form-control form-control-sm" value={promo.endDate} onChange={(e) => setPromo(p => ({ ...p, endDate: e.target.value }))} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                         <div className="row mb-4">
@@ -438,30 +585,6 @@ const ServiceCreate = () => {
                                         )}
                                     </div>
                                 )}
-                            </div>
-                        </div>
-                        <div className="row mb-4">
-                            <label className="col-md-4 col-form-label">Tanggal Mulai <span className="text-danger">*</span></label>
-                            <div className="col-md-8">
-                                <input 
-                                    name="startDate" 
-                                    type="date" 
-                                    className="form-control" 
-                                    onClick={(e) => e.target.showPicker?.()} 
-                                    required 
-                                />
-                            </div>
-                        </div>
-                        <div className="row mb-4">
-                            <label className="col-md-4 col-form-label">Tanggal Akhir <span className="text-danger">*</span></label>
-                            <div className="col-md-8">
-                                <input 
-                                    name="endDate" 
-                                    type="date" 
-                                    className="form-control" 
-                                    onClick={(e) => e.target.showPicker?.()} 
-                                    required 
-                                />
                             </div>
                         </div>
                         {type === 'class' ? (

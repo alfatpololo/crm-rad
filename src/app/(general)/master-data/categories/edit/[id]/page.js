@@ -4,6 +4,7 @@ import Footer from '@/components/shared/Footer'
 import CategoryEdit from '@/components/masterData/CategoryEdit'
 import { getCategory } from '@/actions/masterData'
 import { notFound } from 'next/navigation'
+import { serializeForClient } from '@/utils/serialization'
 
 const EditCategory = async ({ params }) => {
     const category = await getCategory(params.id);
@@ -11,6 +12,8 @@ const EditCategory = async ({ params }) => {
     if (!category) {
         notFound();
     }
+
+    const safeCategory = serializeForClient(category)
 
     return (
         <>
@@ -21,7 +24,7 @@ const EditCategory = async ({ params }) => {
             </PageHeader>
             <div className='main-content'>
                 <div className='row'>
-                    <CategoryEdit category={category} />
+                    <CategoryEdit category={safeCategory} />
                 </div>
             </div>
             <Footer />

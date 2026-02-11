@@ -5,9 +5,13 @@ import CategoriesTable from '@/components/masterData/CategoriesTable'
 import { getCategories } from '@/actions/masterData'
 import Link from 'next/link'
 import { FiPlus } from 'react-icons/fi'
+import { serializeForClient } from '@/utils/serialization'
+
+export const dynamic = 'force-dynamic'
 
 const CategoriesList = async () => {
     const categories = await getCategories();
+    const safeData = serializeForClient(categories)
 
     return (
         <>
@@ -24,7 +28,7 @@ const CategoriesList = async () => {
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
-                                <CategoriesTable data={categories} />
+                                <CategoriesTable data={safeData} />
                             </div>
                         </div>
                     </div>

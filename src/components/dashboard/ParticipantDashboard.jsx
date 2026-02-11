@@ -1,6 +1,6 @@
 import React from 'react'
 import ParticipantDashboardStats from './ParticipantDashboardStats'
-import { FiBook, FiDollarSign, FiCalendar } from 'react-icons/fi'
+import { FiBook, FiDollarSign, FiCalendar, FiAward } from 'react-icons/fi'
 import Link from 'next/link'
 
 const ParticipantDashboard = ({ data }) => {
@@ -21,13 +21,33 @@ const ParticipantDashboard = ({ data }) => {
         )
     }
 
-    const { stats = {}, enrolledClasses = [], recentInvoices = [] } = data
+    const { stats = {}, enrolledClasses = [], recentInvoices = [], membership } = data
+    const membershipActive = membership?.endDate && new Date(membership.endDate) > new Date()
 
     return (
         <>
             {/* Stats */}
             <div className='row'>
                 <ParticipantDashboardStats stats={stats} />
+            </div>
+
+            {/* Membership quick info */}
+            <div className='row mb-4'>
+                <div className="col-12">
+                    <div className="card border-0 shadow-sm">
+                        <div className="card-body py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                            <div className="d-flex align-items-center gap-2">
+                                <FiAward className="text-primary" size={20} />
+                                <span className="fw-medium">
+                                    {membershipActive
+                                        ? `Membership ${membership.typeName} aktif sampai ${new Date(membership.endDate).toLocaleDateString('id-ID')}`
+                                        : 'Anda belum memiliki membership aktif'}
+                                </span>
+                            </div>
+                            <Link href="/membership" className="btn btn-sm btn-outline-primary">Kelola Membership</Link>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             {/* Enrolled Classes & Recent Invoices */}

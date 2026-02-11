@@ -3,12 +3,14 @@ import PageHeader from '@/components/shared/pageHeader/PageHeader'
 import Footer from '@/components/shared/Footer'
 import AttendanceHistoryTable from '@/components/crm/AttendanceHistoryTable'
 import { getAttendanceHistory } from '@/actions/crm'
+import { serializeForClient } from '@/utils/serialization'
 
 export const dynamic = 'force-dynamic'
 
 const AttendanceHistoryPage = async () => {
     const result = await getAttendanceHistory()
     const attendance = result.attendance || []
+    const safeData = serializeForClient(attendance)
 
     return (
         <>
@@ -19,7 +21,7 @@ const AttendanceHistoryPage = async () => {
             </PageHeader>
             <div className='main-content'>
                 <div className='row'>
-                    <AttendanceHistoryTable data={attendance} />
+                    <AttendanceHistoryTable data={safeData} />
                 </div>
             </div>
             <Footer />

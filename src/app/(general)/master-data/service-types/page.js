@@ -5,9 +5,13 @@ import ServiceTypesTable from '@/components/masterData/ServiceTypesTable'
 import { getServiceTypes } from '@/actions/masterData'
 import Link from 'next/link'
 import { FiPlus } from 'react-icons/fi'
+import { serializeForClient } from '@/utils/serialization'
+
+export const dynamic = 'force-dynamic'
 
 const ServiceTypesList = async () => {
     const serviceTypes = await getServiceTypes();
+    const safeData = serializeForClient(serviceTypes)
 
     return (
         <>
@@ -24,7 +28,7 @@ const ServiceTypesList = async () => {
                     <div className="col-lg-12">
                         <div className="card">
                             <div className="card-body">
-                                <ServiceTypesTable data={serviceTypes} />
+                                <ServiceTypesTable data={safeData} />
                             </div>
                         </div>
                     </div>

@@ -1,9 +1,8 @@
 'use client'
 import React, { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthProvider'
-import { db } from '@/lib/firebase/config'
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
 import Link from 'next/link'
+import { getPaymentHistoryForProfile } from '@/actions/payments'
 
 const TabPaymentHistory = () => {
     const { user } = useAuth()
@@ -23,25 +22,14 @@ const TabPaymentHistory = () => {
             }
 
             try {
-                // Fetch payments from invoices collection
-                const paymentsQuery = query(
-                    collection(db, 'invoices'),
-                    where('client.email', '==', user.email),
-                    orderBy('createdAt', 'desc')
-                )
-                
-                const paymentsSnapshot = await getDocs(paymentsQuery)
-                const paymentsData = paymentsSnapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }))
+                const result = await getPaymentHistoryForProfile(user.email)
+                const paymentsData = result.success && result.payments ? result.payments : []
 
                 setPayments(paymentsData)
 
-                // Calculate stats
                 const total = paymentsData.reduce((sum, p) => sum + (parseFloat(p.grandTotal || p.amount) || 0), 0)
                 const completed = paymentsData.filter(p => p.status === 'paid' || p.paymentStatus === 'settlement' || p.paymentStatus === 'capture').length
-                const pending = paymentsData.filter(p => p.status === 'pending' || p.status === 'unpaid').length
+                const pending = paymentsData.filter(p => p.status === 'pending' || p.status === 'unpaid' || p.paymentStatus === 'pending').length
 
                 setStats({ total, completed, pending })
             } catch (error) {
@@ -89,10 +77,10 @@ const TabPaymentHistory = () => {
 
     const formatDate = (timestamp) => {
         if (!timestamp) return '-'
-        const date = timestamp?.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp)
-        return date.toLocaleDateString('id-ID', { 
-            day: '2-digit', 
-            month: 'short', 
+        const date = typeof timestamp === 'string' ? new Date(timestamp) : (timestamp?.seconds ? new Date(timestamp.seconds * 1000) : new Date(timestamp))
+        return date.toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'short',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit'

@@ -111,15 +111,22 @@ export async function getParticipantDetailForAdmin(participantId) {
         // Get completed classes
         const completedClasses = data.completedClasses || [];
 
-        // Get all invoices
+        // Get all invoices (no orderBy to avoid composite index requirement; sort in memory)
         const invoicesSnapshot = await adminDb
             .collection('invoices')
             .where('client.email', '==', data.email || '')
-            .orderBy('issueDate', 'desc')
             .get();
 
+        const toIssueTime = (invData) => {
+            const d = invData.issueDate;
+            if (!d) return 0;
+            if (d.toDate && typeof d.toDate === 'function') return d.toDate().getTime();
+            return new Date(d).getTime();
+        };
+        const sortedDocs = invoicesSnapshot.docs.sort((a, b) => toIssueTime(b.data()) - toIssueTime(a.data()));
+
         const invoices = [];
-        invoicesSnapshot.forEach(invDoc => {
+        sortedDocs.forEach(invDoc => {
             const invData = invDoc.data();
             invoices.push({
                 id: invDoc.id,

@@ -3,12 +3,14 @@ import PageHeader from '@/components/shared/pageHeader/PageHeader'
 import Footer from '@/components/shared/Footer'
 import CertificateTrackingTable from '@/components/crm/CertificateTrackingTable'
 import { getCertificateTracking } from '@/actions/crm'
+import { serializeForClient } from '@/utils/serialization'
 
 export const dynamic = 'force-dynamic'
 
 const CertificateTrackingPage = async () => {
     const result = await getCertificateTracking()
     const certificates = result.certificates || []
+    const safeData = serializeForClient(certificates)
 
     return (
         <>
@@ -19,7 +21,7 @@ const CertificateTrackingPage = async () => {
             </PageHeader>
             <div className='main-content'>
                 <div className='row'>
-                    <CertificateTrackingTable data={certificates} />
+                    <CertificateTrackingTable data={safeData} />
                 </div>
             </div>
             <Footer />
