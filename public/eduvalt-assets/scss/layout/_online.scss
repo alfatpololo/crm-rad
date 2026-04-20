@@ -1,0 +1,173 @@
+@use '../utils' as *;
+
+/*=============================
+    10. Online
+===============================*/
+.online {
+    &-area {
+        padding: 150px 0;
+        @media #{$lg} {
+            padding: 120px 0;
+        }
+    }
+    &__image-wrap {
+        position: relative;
+        margin: 0 100px 0 60px;
+        @media #{$lg} {
+            margin: 0 30px 0 0;
+        }
+        @media #{$md} {
+            display: flex;
+            justify-content: center;
+            margin: 0 0 50px;
+        }
+        @media #{$xs} {
+            margin: 0 0 150px;
+        }
+        @media #{$sm} {
+            margin: 0 0 50px;
+        }
+        & .main-img {
+            background-color: var(--tg-common-color-white);
+            border: 1px solid #E6E5E5;
+            box-shadow: 0px 4px 34px rgba(0, 0, 0, 0.15);
+            border-radius: 10px;
+            padding: 15px;
+            & img {
+                border-radius: 7px;
+                @media #{$xs} {
+                    width: 100%;
+                }
+            }
+        }
+        & .icons {
+            bottom: 65px;
+            max-width: 214px;
+            left: 50%;
+            transform: translateX(-50%);
+            text-align: center;
+            z-index: 1;
+            @media #{$xs} {
+                bottom: 40px;
+            }
+        }
+        & .left-shape {
+            max-width: 82px;
+            left: -110px;
+            bottom: 130px;
+            @media #{$lg} {
+                z-index: -1;
+                left: -35px;
+            }
+        }
+        & .top-shape {
+            top: -35px;
+            right: -22px;
+            max-width: 86px;
+            z-index: -1;
+        }
+        & .svg-shape {
+            top: -40px;
+            right: -50px;
+            z-index: -2;
+        }
+        & .bottom-shape {
+            bottom: -35px;
+            max-width: 108px;
+            right: -35px;
+            z-index: -1;
+        }
+    }
+    &__content {
+        margin-right: 70px;
+        position: relative;
+        @media #{$lg} {
+            margin-right: 0;
+        }
+        @media #{$md} {
+            max-width: 75%;
+            margin: 0 auto;
+        }
+        @media #{$xs} {
+            max-width: 100%;
+        }
+        & .section__title {
+            margin: 0 0 8px;
+            @media #{$md} {
+                & .title {
+                    & br {
+                        display: none;
+                    }
+                }
+            }
+        }
+        & p {
+            margin: 0 0 25px;
+        }
+        & .right-shape {
+            top: 0;
+            right: -175px;
+            max-width: 87px;
+            @media #{$xl} {
+                right: -80px;
+            }
+            @media #{$lg} {
+                right: 0;
+                z-index: -1;
+            }
+        }
+    }
+}
+.enrolled {
+    &__students {
+        background: var(--tg-common-color-white);
+        box-shadow: 0px 10px 40px rgba(0, 0, 0, 0.15);
+        border-radius: 10px;
+        padding: 17px 20px;
+        text-align: center;
+        top: 85px;
+        left: -110px;
+        @media #{$lg} {
+            left: 0;
+        }
+        @media #{$xs} {
+            left: 0;
+            bottom: -115px;
+            top: auto;
+            z-index: 2;
+            right: 0;
+        }
+        @media #{$sm} {
+            left: 0;
+            bottom: auto;
+            top: 120px;
+            right: auto;
+        }
+        & p {
+            font-size: 16px;
+            line-height: 1.4;
+            color: var(--tg-heading-color);
+            font-weight: var(--tg-fw-medium);
+            margin: 0 0 3px;
+            & span {
+                font-weight: var(--tg-fw-bold);
+                color: var(--tg-theme-primary);
+            }
+        }
+        & ul {
+            @include flexbox();
+            align-items: center;
+            justify-content: center;
+            & li {
+                &:not(:first-child) {
+                    margin-left: -17px;
+                }
+                & img {
+                    max-width: 40px;
+                    @include border-radius(50%);
+                    border: 2px solid var(--tg-common-color-white);
+                }
+            }
+        }
+    }
+}

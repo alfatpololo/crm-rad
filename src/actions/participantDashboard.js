@@ -25,9 +25,12 @@ function serializeEnrolledClass(item) {
     };
 }
 
-export async function getParticipantDashboard() {
+/**
+ * @param {import('firebase-admin/auth').DecodedIdToken | null} [sessionUser] — jika sudah ada dari getSessionUser() di halaman yang sama, kirim agar tidak verify session cookie dua kali (lebih cepat di dev & prod).
+ */
+export async function getParticipantDashboard(sessionUser = null) {
     try {
-        const user = await getSessionUser();
+        const user = sessionUser ?? (await getSessionUser());
         if (!user) {
             // Return default structure if no user
             return {
@@ -42,33 +45,39 @@ export async function getParticipantDashboard() {
                     totalClasses: 0,
                     completedClasses: 0,
                     certificates: 0,
-                    totalPaid: 'Rp 0',
-                    totalUnpaid: 'Rp 0',
+                    totalPaid: 0,
+                    totalUnpaid: 0,
                 },
                 recentInvoices: [],
                 enrolledClasses: [],
             };
         }
 
-        // Get participant data
-        const participantDoc = await adminDb.collection('participants').doc(user.uid).get();
-        
+        const participantRef = adminDb.collection('participants').doc(user.uid);
+        /** Tanpa limit, query bisa memuat ratusan dokumen → navigasi ke dashboard terasa lama. */
+        const invoicesQuery = adminDb
+            .collection('invoices')
+            .where('client.email', '==', user.email)
+            .limit(200);
+
+        const [participantDoc, invoicesSnapshot] = await Promise.all([
+            participantRef.get(),
+            invoicesQuery.get().catch((err) => {
+                console.error('Error fetching invoices:', err);
+                return { docs: [] };
+            }),
+        ]);
+
         let participantData = null;
         if (participantDoc.exists) {
             participantData = participantDoc.data();
         }
 
-        // Get enrolled classes from participant
         let enrolledClasses = Array.isArray(participantData?.enrolledClasses) ? participantData.enrolledClasses : [];
 
-        // Get invoices for this participant (untuk recent invoices + fallback kelas dari invoice yang sudah dibayar)
         let invoices = [];
         let paidInvoicesForClasses = [];
         try {
-            const invoicesSnapshot = await adminDb
-                .collection('invoices')
-                .where('client.email', '==', user.email)
-                .get();
 
             const toIssueTime = (data) => {
                 const d = data.issueDate;
@@ -76,7 +85,7 @@ export async function getParticipantDashboard() {
                 if (d.toDate && typeof d.toDate === 'function') return d.toDate().getTime();
                 return new Date(d).getTime();
             };
-            const docs = invoicesSnapshot.docs
+            const docs = (invoicesSnapshot.docs || [])
                 .sort((a, b) => toIssueTime(b.data()) - toIssueTime(a.data()))
                 .slice(0, 20);
 
@@ -87,6 +96,7 @@ export async function getParticipantDashboard() {
                     invoiceNumber: data.invoiceNumber,
                     grandTotal: data.grandTotal,
                     status: data.status,
+                    serviceId: data.serviceId || null,
                     issueDate: data.issueDate?.toDate?.()?.toISOString() || null,
                     dueDate: data.dueDate?.toDate?.()?.toISOString() || null,
                 };
@@ -96,33 +106,44 @@ export async function getParticipantDashboard() {
                 }
             });
         } catch (error) {
-            console.error('Error fetching invoices:', error);
+            console.error('Error processing invoices:', error);
         }
 
         // Fallback: jika Kelas Saya kosong tapi user punya invoice paid yang berisi kelas, ambil dari invoice
         if (enrolledClasses.length === 0 && paidInvoicesForClasses.length > 0) {
             const seenIds = new Set();
+            const pendingRows = [];
             for (const inv of paidInvoicesForClasses) {
                 const serviceId = inv.serviceId || inv.items?.[0]?.id;
                 const name = inv.items?.[0]?.name || 'Kelas';
                 if (!serviceId || seenIds.has(serviceId)) continue;
                 seenIds.add(serviceId);
-                let serviceName = name;
-                try {
-                    const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
-                    if (serviceDoc.exists && serviceDoc.data()?.name) {
-                        serviceName = serviceDoc.data().name;
-                    }
-                } catch (_) {}
+                pendingRows.push({ serviceId, name, inv });
+            }
+            const serviceIds = pendingRows.map((r) => r.serviceId);
+            const serviceSnaps = await Promise.all(
+                serviceIds.map((id) =>
+                    adminDb.collection('services').doc(id).get().catch(() => ({ exists: false }))
+                )
+            );
+            const nameByServiceId = new Map();
+            serviceSnaps.forEach((snap, i) => {
+                const sid = serviceIds[i];
+                if (snap.exists && snap.data()?.name) {
+                    nameByServiceId.set(sid, snap.data().name);
+                }
+            });
+            for (const row of pendingRows) {
+                const serviceName = nameByServiceId.get(row.serviceId) || row.name;
                 enrolledClasses.push({
-                    id: serviceId,
-                    serviceId,
+                    id: row.serviceId,
+                    serviceId: row.serviceId,
                     name: serviceName,
                     title: serviceName,
-                    purchaseDate: inv.paidDate?.toDate?.()?.toISOString?.() || inv.issueDate?.toDate?.()?.toISOString?.() || new Date().toISOString(),
+                    purchaseDate: row.inv.paidDate?.toDate?.()?.toISOString?.() || row.inv.issueDate?.toDate?.()?.toISOString?.() || new Date().toISOString(),
                     status: 'enrolled',
-                    invoiceId: inv.id,
-                    invoiceNumber: inv.invoiceNumber,
+                    invoiceId: row.inv.id,
+                    invoiceNumber: row.inv.invoiceNumber,
                 });
             }
             // Sync ke dokumen participant supaya "Kelas Saya" di profil / client baca juga dapat data real
@@ -157,9 +178,27 @@ export async function getParticipantDashboard() {
             }
             : null;
 
+        const hasClassInvoice = invoices.some(inv => inv.serviceId && ['paid', 'pending'].includes(inv.status));
+        let documentsNeeded = false;
+        if (hasClassInvoice) {
+            const { getRequiredDocumentTypes } = await import('./documentTypes');
+            const { types: reqTypes } = await getRequiredDocumentTypes();
+            const typeIds = reqTypes.map(t => t.id);
+            const classDocs = participantData.classDocuments || {};
+            const serviceIdsNeedingDocs = new Set();
+            invoices.forEach(inv => {
+                const sid = inv.serviceId;
+                if (!sid || !['paid', 'pending'].includes(inv.status)) return;
+                const hasAll = typeIds.every(id => classDocs[sid] && classDocs[sid][id]);
+                if (!hasAll) serviceIdsNeedingDocs.add(sid);
+            });
+            const legacyDone = serviceIdsNeedingDocs.size === 0 && !Object.keys(classDocs).length && participantData.cvUrl && participantData.ijazahUrl && invoices.filter(i => i.serviceId && ['paid', 'pending'].includes(i.status)).length === 1;
+            documentsNeeded = serviceIdsNeedingDocs.size > 0 && !legacyDone;
+        }
+
         return {
             participant: {
-                name: participantData?.name || user.displayName || user.email?.split('@')[0] || 'User',
+                name: participantData?.name || user.displayName || user.name || user.email?.split('@')[0] || 'User',
                 email: participantData?.email || user.email || '',
                 phone: participantData?.phone || participantData?.phoneNumber || '',
                 enrolledClasses: enrolledClasses.length,
@@ -170,11 +209,12 @@ export async function getParticipantDashboard() {
                 totalClasses: enrolledClasses.length,
                 completedClasses: participantData?.completedClasses?.length || 0,
                 certificates: participantData?.certificates?.length || 0,
-                totalPaid: totalPaid.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
-                totalUnpaid: totalUnpaid.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
+                totalPaid: totalPaid,
+                totalUnpaid: totalUnpaid,
             },
             recentInvoices: invoices.slice(0, 5),
             enrolledClasses: enrolledClasses.map(serializeEnrolledClass),
+            documentsNeeded,
         };
 
     } catch (error) {
@@ -193,11 +233,12 @@ export async function getParticipantDashboard() {
                 totalClasses: 0,
                 completedClasses: 0,
                 certificates: 0,
-                totalPaid: 'Rp 0',
-                totalUnpaid: 'Rp 0',
+                totalPaid: 0,
+                totalUnpaid: 0,
             },
             recentInvoices: [],
             enrolledClasses: [],
+            documentsNeeded: false,
         };
     }
 }

@@ -20,57 +20,55 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
+        let firstAuthEvent = true;
         const unsubscribe = onAuthStateChanged(auth, async (authUser) => {
-            setLoading(true);
-            if (authUser) {
-                setUser(authUser);
+            if (firstAuthEvent) setLoading(true);
+            try {
+                if (authUser) {
+                    setUser(authUser);
 
-                // Check if admin@mail.com - set as admin
-                if (authUser.email === 'admin@mail.com') {
-                    setRole('admin');
-                    // Ensure admin role is saved in Firestore
-                    try {
-                        const userDocRef = doc(db, "users", authUser.uid);
-                        const userDoc = await getDoc(userDocRef);
-                        if (!userDoc.exists() || userDoc.data().role !== 'admin') {
-                            // Set admin role in Firestore (this would normally be done server-side)
-                            // For now, we'll just set it in state
+                    if (authUser.email === 'admin@mail.com') {
+                        setRole('admin');
+                        try {
+                            const userDocRef = doc(db, "users", authUser.uid);
+                            const userDoc = await getDoc(userDocRef);
+                            if (!userDoc.exists() || userDoc.data().role !== 'admin') {
+                                // admin role di Firestore biasanya dari server
+                            }
+                        } catch (error) {
+                            console.error("Error setting admin role:", error);
                         }
-                    } catch (error) {
-                        console.error("Error setting admin role:", error);
-                    }
-                } else {
-                    // Fetch Role from Token (Custom Claims)
-                    try {
-                        const tokenResult = await authUser.getIdTokenResult();
-                        if (tokenResult.claims.role) {
-                            setRole(tokenResult.claims.role);
-                        } else {
-                            // Fallback: Check Firestore if claims not set yet
-                            const userDoc = await getDoc(doc(db, "users", authUser.uid));
-                            if (userDoc.exists()) {
-                                setRole(userDoc.data().role);
+                    } else {
+                        try {
+                            const tokenResult = await authUser.getIdTokenResult();
+                            if (tokenResult.claims.role) {
+                                setRole(tokenResult.claims.role);
                             } else {
-                                // Also check participants collection
-                                const participantDoc = await getDoc(doc(db, "participants", authUser.uid));
-                                if (participantDoc.exists()) {
+                                const [userDoc, participantDoc] = await Promise.all([
+                                    getDoc(doc(db, "users", authUser.uid)),
+                                    getDoc(doc(db, "participants", authUser.uid)),
+                                ]);
+                                if (userDoc.exists()) {
+                                    setRole(userDoc.data().role);
+                                } else if (participantDoc.exists()) {
                                     setRole(participantDoc.data().role || 'participant');
                                 } else {
-                                    setRole('participant'); // Default
+                                    setRole('participant');
                                 }
                             }
+                        } catch (error) {
+                            console.error("Error fetching role:", error);
+                            setRole('participant');
                         }
-                    } catch (error) {
-                        console.error("Error fetching role:", error);
-                        setRole('participant'); // Default fallback
                     }
+                } else {
+                    setUser(null);
+                    setRole(null);
                 }
-
-            } else {
-                setUser(null);
-                setRole(null);
+            } finally {
+                setLoading(false);
+                firstAuthEvent = false;
             }
-            setLoading(false);
         });
 
         return () => unsubscribe();
@@ -78,19 +76,17 @@ export const AuthProvider = ({ children }) => {
 
     const signOut = async () => {
         try {
-            // Remove server session first
             await removeSession();
-            // Then sign out from Firebase
-            await firebaseSignOut(auth);
-            // Clear local state
-            setUser(null);
-            setRole(null);
         } catch (error) {
-            console.error('Sign out error:', error);
-            // Even if there's an error, clear local state
-            setUser(null);
-            setRole(null);
+            console.error('Sign out (session cookie):', error);
         }
+        try {
+            await firebaseSignOut(auth);
+        } catch (error) {
+            console.error('Sign out (Firebase):', error);
+        }
+        setUser(null);
+        setRole(null);
     };
 
     return (

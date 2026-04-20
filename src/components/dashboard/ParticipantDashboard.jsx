@@ -1,7 +1,8 @@
 import React from 'react'
 import ParticipantDashboardStats from './ParticipantDashboardStats'
-import { FiBook, FiDollarSign, FiCalendar, FiAward } from 'react-icons/fi'
+import { FiBook, FiDollarSign, FiAward } from 'react-icons/fi'
 import Link from 'next/link'
+import { formatShortCurrency } from '@/utils/formatCurrency'
 
 const ParticipantDashboard = ({ data }) => {
     // Handle null or missing data
@@ -21,7 +22,7 @@ const ParticipantDashboard = ({ data }) => {
         )
     }
 
-    const { stats = {}, enrolledClasses = [], recentInvoices = [], membership } = data
+    const { stats = {}, enrolledClasses = [], recentInvoices = [], membership, documentsNeeded } = data
     const membershipActive = membership?.endDate && new Date(membership.endDate) > new Date()
 
     return (
@@ -30,6 +31,23 @@ const ParticipantDashboard = ({ data }) => {
             <div className='row'>
                 <ParticipantDashboardStats stats={stats} />
             </div>
+
+            {/* Upload CV & Ijazah (setelah DP) */}
+            {documentsNeeded && (
+                <div className='row mb-4'>
+                    <div className="col-12">
+                        <div className="card border-0 shadow-sm border-warning" style={{ borderWidth: '2px', borderStyle: 'solid' }}>
+                            <div className="card-body py-3 d-flex align-items-center justify-content-between flex-wrap gap-2">
+                                <div>
+                                    <h6 className="fw-bold mb-1">Lengkapi Data</h6>
+                                    <p className="text-muted small mb-0">Setelah pembayaran DP, silakan upload dokumen wajib (pilih kelas lalu upload).</p>
+                                </div>
+                                <Link href="/documents" className="btn btn-warning">Upload Dokumen Wajib</Link>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Membership quick info */}
             <div className='row mb-4'>
@@ -130,7 +148,7 @@ const ParticipantDashboard = ({ data }) => {
                                                 </span>
                                             </div>
                                             <div className="d-flex justify-content-between align-items-center">
-                                                <span className="fw-bold">Rp {parseFloat(invoice.grandTotal || 0).toLocaleString('id-ID')}</span>
+                                                <span className="fw-bold">{formatShortCurrency(invoice.grandTotal || 0)}</span>
                                                 <Link href={`/payments-history?id=${invoice.id}`} className="btn btn-sm btn-light">
                                                     Detail
                                                 </Link>

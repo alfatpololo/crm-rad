@@ -1,0 +1,80 @@
+@use '../utils' as *;
+
+/*=============================
+    18. FAQ
+===============================*/
+.faq-wrap {
+    & .accordion {
+        &-item {
+            background-color: transparent;
+            border: none;
+            margin-bottom: 5px;
+            &:last-child {
+                margin-bottom: 0;
+            }
+            &:first-of-type .accordion-button {
+                border-top-left-radius: 5px;
+                border-top-right-radius: 5px;
+            }
+            &:last-of-type .accordion-button.collapsed {
+                border-bottom-right-radius: 5px;
+                border-bottom-left-radius: 5px;
+            }
+        }
+        &-button {
+            padding: 23px 80px 23px 25px;
+            font-weight: 500;
+            font-size: 20px;
+            color: var(--tg-theme-secondary);
+            font-family: var(--tg-heading-font-family);
+            background-color: #E6F2FF;
+            border: none;
+            border-radius: 6px;
+            position: relative;
+            @media #{$xs} {
+                padding: 23px 68px 23px 20px;
+                font-size: 18px;
+            }
+            &:focus {
+                box-shadow: none;
+            }
+            &:not(.collapsed) {
+                color: var(--tg-common-color-white);
+                background-color: var(--tg-theme-primary);
+                box-shadow: none;
+            }
+            &::after {
+                content: "\f061";
+                position: absolute;
+                right: 20px;
+                top: 15px;
+                width: 40px;
+                height: 40px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: var(--tg-common-color-white);
+                color: var(--tg-theme-primary);
+                border-radius: 50%;
+                font-weight: 700;
+                font-family: var(--tg-icon-font-family);
+                font-size: 14px;
+                @media #{$xs} {
+                    right: 15px;
+                }
+            }
+            &:not(.collapsed)::after {
+                transform: rotate(-90deg);
+            }
+        }
+        &-body {
+            padding: 22px 50px 22px 25px;
+            @media #{$xs} {
+                padding: 22px 30px 22px 20px;
+            }
+            & p {
+                margin-bottom: 0;
+            }
+        }
+    }
+}

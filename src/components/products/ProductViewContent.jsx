@@ -39,14 +39,14 @@ const ProductViewContent = ({ product }) => {
 
         try {
             const { purchaseProduct } = await import('@/actions/participants')
-            const result = await purchaseProduct(product.id, product, { quantity: qty })
+            const result = await purchaseProduct(product.id, product, { quantity: qty, baseUrl: typeof window !== 'undefined' ? window.location.origin : undefined })
 
             if (result.success && result.redirectUrl) {
                 window.location.href = `/payments/process?orderId=${result.orderId}&redirectUrl=${encodeURIComponent(result.redirectUrl)}`
                 return
             }
             if (result.success) {
-                await Swal.fire({ icon: 'success', title: 'Berhasil', text: result.message || 'Pembelian diproses.' })
+                await Swal.fire({ icon: 'success', title: 'Invoice Berhasil Dibuat', text: result.message || 'Silakan hubungi admin untuk pembayaran.' })
                 return
             }
             await Swal.fire({ icon: 'error', title: 'Gagal', text: result.error || 'Gagal membeli produk.' })

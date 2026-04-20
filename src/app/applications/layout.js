@@ -1,4 +1,5 @@
 'use client'
+import '@/lib/sharedAppGlobals'
 import { usePathname } from 'next/navigation'
 import ChatProfileInfo from '@/components/chats/ChatProfileInfo'
 import VideoCall from '@/components/chats/VideoCall'

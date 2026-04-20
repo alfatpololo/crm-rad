@@ -1,26 +1,40 @@
 'use client'
-import React, { useState, useEffect } from 'react'
-import { FiSend, FiUsers, FiMail } from 'react-icons/fi'
+import React, { useState, useEffect, useMemo } from 'react'
+import { FiSend, FiCheckCircle, FiAlertCircle } from 'react-icons/fi'
 import Swal from 'sweetalert2'
 import { sendBlastPromo } from '@/actions/crm'
 import { useRouter } from 'next/navigation'
 import Table from '@/components/shared/table/Table'
+import { normalizePhone } from '@/lib/mekariWa'
 
 const BlastPromoContent = ({ initialParticipants = [] }) => {
     const router = useRouter()
     const [loading, setLoading] = useState(false)
     const [participants, setParticipants] = useState(initialParticipants)
     const [selectedParticipants, setSelectedParticipants] = useState([])
-    const [filter, setFilter] = useState('all') // all, active, enrolled
-    const [formData, setFormData] = useState({
-        subject: '',
-        message: '',
-        type: 'email' // email, whatsapp
-    })
+    const [filter, setFilter] = useState('all')
+    const [message, setMessage] = useState('')
 
     useEffect(() => {
         setParticipants(initialParticipants)
     }, [initialParticipants])
+
+    const phoneValidation = useMemo(() => {
+        const selected = participants.filter(p => selectedParticipants.includes(p.id))
+        const valid = []
+        const invalid = []
+        selected.forEach(p => {
+            const raw = (p?.phone ?? p?.phoneNumber ?? '').toString().trim()
+            const normalized = raw ? normalizePhone(raw) : null
+            const label = `${p.name || 'Tanpa nama'}${raw ? ` (${raw})` : ''}`
+            if (normalized) {
+                valid.push({ id: p.id, name: p.name, phone: raw, normalized })
+            } else {
+                invalid.push({ id: p.id, name: p.name, raw: raw || '(kosong)' })
+            }
+        })
+        return { valid, invalid, validCount: valid.length, invalidCount: invalid.length }
+    }, [participants, selectedParticipants])
 
     const handleSelectAll = (checked) => {
         if (checked) {
@@ -51,19 +65,34 @@ const BlastPromoContent = ({ initialParticipants = [] }) => {
             return
         }
 
-        if (!formData.subject || !formData.message) {
+        if (phoneValidation.validCount === 0) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Tidak ada nomor WA valid',
+                html: `<p class="text-start">${phoneValidation.invalidCount} peserta terpilih tidak punya nomor yang valid (min. 10 digit, format 08xxx atau 62xxx).</p>
+                    ${phoneValidation.invalid.length ? `<p class="text-start small mt-2">Contoh: ${phoneValidation.invalid.slice(0, 3).map(x => `${x.name}: ${x.raw}`).join('; ')}</p>` : ''}`,
+                confirmButtonColor: '#dc3545',
+            })
+            return
+        }
+
+        if (!message.trim()) {
             Swal.fire({
                 icon: 'warning',
                 title: 'Peringatan',
-                text: 'Subject dan Message harus diisi',
+                text: 'Pesan harus diisi',
                 confirmButtonColor: '#198754',
             })
             return
         }
 
+        const listPreview = phoneValidation.valid.slice(0, 10).map(v => `${v.name} (${v.phone})`).join('<br/>')
+        const more = phoneValidation.validCount > 10 ? `<br/><small>... dan ${phoneValidation.validCount - 10} lainnya</small>` : ''
         const confirm = await Swal.fire({
-            title: 'Konfirmasi Kirim Promo',
-            html: `Anda akan mengirim promo ke <b>${selectedParticipants.length}</b> peserta. Lanjutkan?`,
+            title: 'Konfirmasi Kirim Promo WA',
+            html: `<p><b>${phoneValidation.validCount}</b> peserta dengan nomor WA valid akan menerima pesan:</p>
+                <div class="text-start small bg-light p-2 rounded mt-2 mb-2" style="max-height:200px; overflow:auto;">${listPreview}${more}</div>
+                <p class="mb-0">Lanjutkan kirim?</p>`,
             icon: 'question',
             showCancelButton: true,
             confirmButtonText: 'Ya, Kirim',
@@ -74,11 +103,14 @@ const BlastPromoContent = ({ initialParticipants = [] }) => {
         if (confirm.isConfirmed) {
             setLoading(true)
             try {
+                const selectedPhones = phoneValidation.valid.map(v => ({ id: v.id, phone: v.phone }))
+                const idsToSend = phoneValidation.valid.map(v => v.id)
                 const result = await sendBlastPromo(
-                    selectedParticipants,
-                    formData.subject,
-                    formData.message,
-                    formData.type
+                    idsToSend,
+                    '',
+                    message.trim(),
+                    'whatsapp',
+                    selectedPhones
                 )
 
                 if (result.error) {
@@ -95,7 +127,7 @@ const BlastPromoContent = ({ initialParticipants = [] }) => {
                         text: result.message || `Promo berhasil dikirim ke ${result.sentCount} peserta`,
                         confirmButtonColor: '#198754',
                     })
-                    setFormData({ subject: '', message: '', type: 'email' })
+                    setMessage('')
                     setSelectedParticipants([])
                     router.refresh()
                 }
@@ -199,50 +231,64 @@ const BlastPromoContent = ({ initialParticipants = [] }) => {
                 <div className="col-lg-4">
                     <div className="card">
                         <div className="card-header">
-                            <h5 className="mb-0">Form Blast Promo</h5>
+                            <h5 className="mb-0">Blast Promo WhatsApp</h5>
                         </div>
                         <div className="card-body">
                             <form onSubmit={handleSend}>
+                                {selectedParticipants.length > 0 && (
+                                    <div className="mb-3 p-3 rounded border bg-light">
+                                        <strong className="d-block mb-2">Validasi nomor WA (sebelum kirim)</strong>
+                                        {phoneValidation.validCount > 0 ? (
+                                            <div className="mb-2">
+                                                <span className="text-success d-flex align-items-center gap-1">
+                                                    <FiCheckCircle size={16} />
+                                                    <strong>{phoneValidation.validCount}</strong> nomor valid — akan dikirim:
+                                                </span>
+                                                <ul className="small mb-0 mt-1 ps-3" style={{ maxHeight: '120px', overflowY: 'auto' }}>
+                                                    {phoneValidation.valid.map(v => (
+                                                        <li key={v.id}>{v.name}: <code>{v.phone}</code></li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        ) : null}
+                                        {phoneValidation.invalidCount > 0 && (
+                                            <div className="text-danger small">
+                                                <span className="d-flex align-items-center gap-1">
+                                                    <FiAlertCircle size={14} />
+                                                    <strong>{phoneValidation.invalidCount}</strong> tanpa nomor valid (08xxx/62xxx, min. 10 digit):
+                                                </span>
+                                                <ul className="mb-0 mt-1 ps-3" style={{ maxHeight: '80px', overflowY: 'auto' }}>
+                                                    {phoneValidation.invalid.map(x => (
+                                                        <li key={x.id}>{x.name}: {x.raw}</li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                                 <div className="mb-3">
-                                    <label className="form-label">Tipe Pengiriman</label>
-                                    <select
-                                        className="form-control"
-                                        value={formData.type}
-                                        onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                                    >
-                                        <option value="email">Email</option>
-                                        <option value="whatsapp">WhatsApp</option>
-                                    </select>
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Subject <span className="text-danger">*</span></label>
-                                    <input
-                                        type="text"
-                                        className="form-control"
-                                        placeholder="Subject promo..."
-                                        value={formData.subject}
-                                        onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                        required
-                                    />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Message <span className="text-danger">*</span></label>
+                                    <label className="form-label">Pesan <span className="text-danger">*</span></label>
                                     <textarea
                                         rows={8}
                                         className="form-control"
-                                        placeholder="Isi pesan promo..."
-                                        value={formData.message}
-                                        onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+                                        placeholder="Isi pesan promo yang akan dikirim via WA..."
+                                        value={message}
+                                        onChange={(e) => setMessage(e.target.value)}
                                         required
                                     />
+                                    <small className="text-muted">Pesan akan dikirim ke nomor WA yang valid di atas.</small>
                                 </div>
                                 <button
                                     type="submit"
-                                    className="btn btn-primary w-100"
-                                    disabled={loading || selectedParticipants.length === 0}
+                                    className="btn btn-success w-100"
+                                    disabled={loading || selectedParticipants.length === 0 || phoneValidation.validCount === 0}
                                 >
                                     <FiSend size={16} className="me-2" />
-                                    {loading ? 'Mengirim...' : `Kirim ke ${selectedParticipants.length} Peserta`}
+                                    {loading ? 'Mengirim...' : phoneValidation.validCount > 0
+                                        ? `Kirim WA ke ${phoneValidation.validCount} Peserta`
+                                        : selectedParticipants.length === 0
+                                            ? 'Pilih peserta'
+                                            : 'Tidak ada nomor valid'}
                                 </button>
                             </form>
                         </div>

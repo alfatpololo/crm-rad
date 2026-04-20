@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic'
 import CardHeader from '@/components/shared/CardHeader'
 import CardLoader from '@/components/shared/CardLoader'
 import useCardTitleActions from '@/hooks/useCardTitleActions'
+import { formatShortCurrency } from '@/utils/formatCurrency'
 
 const ReactApexChart = dynamic(() => import('react-apexcharts'), { ssr: false })
 
@@ -97,7 +98,7 @@ const PaymentStatsChart = ({ paymentStats }) => {
                         />
                         <StatCard 
                             bg_color="bg-primary" 
-                            value={`Rp ${(paymentStats.revenue || 0).toLocaleString('id-ID')}`} 
+                            value={formatShortCurrency(paymentStats.revenue || 0)} 
                             title="Total Pendapatan" 
                         />
                     </div>
@@ -113,7 +114,7 @@ const StatCard = ({ title, value, bg_color }) => {
         <div className="col-lg-3">
             <div className="p-3 border border-dashed rounded">
                 <div className="fs-12 text-muted mb-1">{title}</div>
-                <h6 className="fw-bold text-dark">{value}</h6>
+                <h6 className="fw-bold text-dark text-truncate">{value}</h6>
                 <div className="progress mt-2 ht-3">
                     <div className={`progress-bar ${bg_color}`} role="progressbar" style={{ width: '100%' }}></div>
                 </div>

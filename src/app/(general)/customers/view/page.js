@@ -6,6 +6,7 @@ import CustomerContent from '@/components/customersView/CustomerContent'
 import { useSearchParams } from 'next/navigation'
 import { getParticipantDetailForAdmin } from '@/actions/admin'
 import { useAuth } from '@/context/AuthProvider'
+import { getWhatsAppChatUrl } from '@/lib/mekariWa'
 
 const CustomerViewContent = () => {
   const searchParams = useSearchParams()
@@ -57,7 +58,14 @@ const CustomerViewContent = () => {
       <div className='main-content'>
         <div className='row'>
           {role === 'admin' && participantDetail ? (
-            <AdminParticipantDetail data={participantDetail} />
+            <AdminParticipantDetail
+              data={participantDetail}
+              participantId={participantId}
+              onRefresh={async () => {
+                const result = await getParticipantDetailForAdmin(participantId)
+                if (result && !result.error) setParticipantDetail(result)
+              }}
+            />
           ) : (
             <CustomerContent />
           )}
@@ -82,15 +90,43 @@ const page = () => {
 }
 
 // Admin view with detailed participant info
-const AdminParticipantDetail = ({ data }) => {
+const AdminParticipantDetail = ({ data, participantId, onRefresh }) => {
   const { participant, enrolledClasses, completedClasses, invoices, certificates, attendanceHistory } = data
+  const [creatingCharges, setCreatingCharges] = React.useState(false)
+
+  const handleCreatePostCertCharges = async () => {
+    if (!participantId) return
+    const { createPostCertificationInvoicesForParticipant } = await import('@/actions/postCertificationCharges')
+    setCreatingCharges(true)
+    try {
+      const res = await createPostCertificationInvoicesForParticipant(participantId)
+      if (res.success) {
+        const { default: Swal } = await import('sweetalert2')
+        await Swal.fire('Berhasil', res.message || 'Tagihan pasca-sertifikasi dibuat.', 'success')
+        if (typeof onRefresh === 'function') await onRefresh()
+      } else {
+        const { default: Swal } = await import('sweetalert2')
+        await Swal.fire('Error', res.error || 'Gagal membuat tagihan', 'error')
+      }
+    } finally {
+      setCreatingCharges(false)
+    }
+  }
 
   return (
     <>
       <div className="col-xxl-12">
         <div className="card border-0 shadow-sm mb-4">
-          <div className="card-header bg-transparent border-bottom pb-3">
+          <div className="card-header bg-transparent border-bottom pb-3 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <h5 className="card-title mb-0 fw-bold">Detail Peserta</h5>
+            <button
+              type="button"
+              className="btn btn-warning btn-sm"
+              onClick={handleCreatePostCertCharges}
+              disabled={creatingCharges}
+            >
+              {creatingCharges ? 'Memproses...' : 'Buat Tagihan Pasca-Sertifikasi'}
+            </button>
           </div>
           <div className="card-body p-4">
             <div className="row">
@@ -104,7 +140,20 @@ const AdminParticipantDetail = ({ data }) => {
               </div>
               <div className="col-md-6 mb-3">
                 <p className="text-muted small mb-1">Phone</p>
-                <p className="fw-bold mb-0">{participant.phone || '-'}</p>
+                <div className="d-flex align-items-center gap-2 flex-wrap">
+                  <p className="fw-bold mb-0">{participant.phone || '-'}</p>
+                  {participant.phone && getWhatsAppChatUrl(participant.phone) && (
+                    <a
+                      href={getWhatsAppChatUrl(participant.phone)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-success btn-sm d-inline-flex align-items-center gap-1"
+                      title="Chat via WhatsApp"
+                    >
+                      <span aria-hidden>WA</span>
+                    </a>
+                  )}
+                </div>
               </div>
               <div className="col-md-6 mb-3">
                 <p className="text-muted small mb-1">Alamat</p>

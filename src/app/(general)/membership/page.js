@@ -15,7 +15,7 @@ export default async function MembershipPage() {
   if (!user) redirect('/authentication/login/cover?redirect=/membership')
 
   const [dashboardData, types] = await Promise.all([
-    getParticipantDashboard(),
+    getParticipantDashboard(user),
     getMembershipTypes(),
   ])
   const membership = dashboardData?.membership ?? null

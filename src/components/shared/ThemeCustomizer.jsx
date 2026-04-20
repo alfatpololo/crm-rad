@@ -1,4 +1,5 @@
 'use client'
+import 'react-perfect-scrollbar/dist/css/styles.css'
 import React, { useEffect, useState } from 'react'
 import PerfectScrollbar from 'react-perfect-scrollbar'
 import { FiSettings, FiX } from 'react-icons/fi'

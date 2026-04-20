@@ -1,29 +1,28 @@
 'use client'
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
-// import { BsPatchCheckFill } from 'react-icons/bs'
-// import { FiEdit, FiMail, FiMapPin, FiPhone } from 'react-icons/fi'
 import { useAuth } from '@/context/AuthProvider'
 import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
+import { updateParticipantProfile } from '@/actions/profile'
 
 const Profile = () => {
     const { user } = useAuth()
     const [profileData, setProfileData] = useState(null)
     const [loading, setLoading] = useState(true)
+    const [editing, setEditing] = useState(false)
+    const [saving, setSaving] = useState(false)
+    const [message, setMessage] = useState(null)
+    const [form, setForm] = useState({ name: '', phone: '', location: '' })
 
-    useEffect(() => {
-        const fetchProfileData = async () => {
+    const fetchProfileData = async () => {
             if (!user) {
                 setLoading(false)
                 return
             }
 
             try {
-                // Try to get from users collection first
                 let userDoc = await getDoc(doc(db, 'users', user.uid))
-                
-                // If not found, try participants collection
                 if (!userDoc.exists()) {
                     userDoc = await getDoc(doc(db, 'participants', user.uid))
                 }
@@ -38,8 +37,12 @@ const Profile = () => {
                         location: data.location || data.address || null,
                         emailVerified: user.emailVerified || false,
                     })
+                    setForm({
+                        name: data.name || data.displayName || user.displayName || user.email?.split('@')[0] || '',
+                        phone: data.phone || data.phoneNumber || user.phoneNumber || '',
+                        location: data.location || data.address || '',
+                    })
                 } else {
-                    // Use basic auth data
                     setProfileData({
                         displayName: user.displayName || user.email?.split('@')[0] || 'User',
                         email: user.email,
@@ -48,10 +51,14 @@ const Profile = () => {
                         location: null,
                         emailVerified: user.emailVerified || false,
                     })
+                    setForm({
+                        name: user.displayName || user.email?.split('@')[0] || '',
+                        phone: user.phoneNumber || '',
+                        location: '',
+                    })
                 }
             } catch (error) {
                 console.error('Error fetching profile:', error)
-                // Fallback to basic auth data
                 setProfileData({
                     displayName: user.displayName || user.email?.split('@')[0] || 'User',
                     email: user.email,
@@ -60,11 +67,13 @@ const Profile = () => {
                     location: null,
                     emailVerified: user.emailVerified || false,
                 })
+                setForm({ name: user.displayName || user.email?.split('@')[0] || '', phone: user.phoneNumber || '', location: '' })
             } finally {
                 setLoading(false)
             }
         }
 
+    useEffect(() => {
         fetchProfileData()
     }, [user])
 
@@ -88,7 +97,7 @@ const Profile = () => {
     const phone = profileData.phoneNumber || 'Not set'
     const location = profileData.location || 'Not set'
 
-    return (
+    const profileCard = (
         <div className="card border-0 shadow-sm">
             <div className="card-body p-4">
                 <div className="text-center mb-4">
@@ -146,14 +155,110 @@ const Profile = () => {
                 </div>
 
                 <div className="d-grid gap-2 mt-4">
-                    <a href="#" className="btn btn-primary">
+                    <button
+                        type="button"
+                        className="btn btn-primary"
+                        onClick={() => {
+                            setEditing(true)
+                            setForm({
+                                name: profileData.displayName || '',
+                                phone: profileData.phoneNumber || '',
+                                location: profileData.location || '',
+                            })
+                            setMessage(null)
+                        }}
+                    >
                         <span className="me-2">✏️</span>
                         <span>Edit Profile</span>
-                    </a>
+                    </button>
                 </div>
             </div>
         </div>
     )
+
+    if (editing) {
+        const handleSubmit = async (e) => {
+            e.preventDefault()
+            setSaving(true)
+            setMessage(null)
+            const res = await updateParticipantProfile({
+                name: form.name,
+                displayName: form.name,
+                phone: form.phone,
+                phoneNumber: form.phone,
+                address: form.location,
+                location: form.location,
+            })
+            setSaving(false)
+            if (res?.success) {
+                setMessage({ type: 'success', text: res.message || 'Profil berhasil diperbarui.' })
+                setEditing(false)
+                fetchProfileData()
+            } else {
+                setMessage({ type: 'danger', text: res?.error || 'Gagal memperbarui profil.' })
+            }
+        }
+        return (
+            <div className="card border-0 shadow-sm">
+                <div className="card-body p-4">
+                    <h5 className="fw-bold mb-4">Edit Profil</h5>
+                    {message && (
+                        <div className={`alert alert-${message.type} py-2 mb-3`} role="alert">
+                            {message.text}
+                        </div>
+                    )}
+                    <form onSubmit={handleSubmit}>
+                        <div className="mb-3">
+                            <label className="form-label">Nama</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={form.name}
+                                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                                placeholder="Nama lengkap"
+                            />
+                        </div>
+                        <div className="mb-3">
+                            <label className="form-label">No. Telepon</label>
+                            <input
+                                type="tel"
+                                className="form-control"
+                                value={form.phone}
+                                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                                placeholder="08xxxxxxxxxx"
+                            />
+                        </div>
+                        <div className="mb-3">
+                            <label className="form-label">Alamat / Lokasi</label>
+                            <input
+                                type="text"
+                                className="form-control"
+                                value={form.location}
+                                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                                placeholder="Alamat atau kota"
+                            />
+                        </div>
+                        <p className="small text-muted mb-3">Email tidak dapat diubah (mengikuti akun login).</p>
+                        <div className="d-flex gap-2">
+                            <button type="submit" className="btn btn-primary" disabled={saving}>
+                                {saving ? 'Menyimpan...' : 'Simpan'}
+                            </button>
+                            <button
+                                type="button"
+                                className="btn btn-outline-secondary"
+                                onClick={() => { setEditing(false); setMessage(null); }}
+                                disabled={saving}
+                            >
+                                Batal
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        )
+    }
+
+    return profileCard
 }
 
 export default Profile

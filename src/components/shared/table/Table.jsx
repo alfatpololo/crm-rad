@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react'
 import TableSearch from './TableSearch'
 import TablePagination from './TablePagination'

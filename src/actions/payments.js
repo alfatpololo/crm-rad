@@ -2,19 +2,44 @@
 
 import { adminDb } from '@/lib/firebase/admin';
 import { getSessionUser } from './auth';
-import { checkMidtransPaymentStatus as checkPaymentStatusFromMidtrans } from './midtrans';
 import { revalidatePath } from 'next/cache';
 
+function dokuStatusIsPaid(transactionStatus) {
+    const s = (transactionStatus || '').toUpperCase();
+    return s === 'SUCCESS' || s === 'SETTLEMENT' || s === 'PAID';
+}
+
 /**
- * Check payment status and update invoice/class enrollment
+ * Check payment status by orderId. For Doku: resolves invoice then checks Doku order status.
+ * Returns { success, transactionStatus } where transactionStatus 'settlement'|'capture' = paid.
  */
 export async function checkMidtransPaymentStatus(orderId) {
     try {
-        const result = await checkPaymentStatusFromMidtrans(orderId);
-        return result;
-    } catch (error) {
-        console.error('Error checking payment status:', error);
-        return { success: false, error: error.message };
+        const user = await getSessionUser();
+        if (!user) return { success: false, error: 'User not authenticated' };
+        const invoicesSnapshot = await adminDb
+            .collection('invoices')
+            .where('orderId', '==', orderId)
+            .where('client.email', '==', user.email)
+            .limit(1)
+            .get();
+        if (invoicesSnapshot.empty) return { success: false, error: 'Invoice not found' };
+        const invoiceData = invoicesSnapshot.docs[0].data();
+        if (invoiceData.paymentMethod !== 'doku') {
+            return { success: false, error: 'Metode pembayaran tidak dikonfigurasi.' };
+        }
+        const { checkDokuOrderStatus } = await import('./doku');
+        const result = await checkDokuOrderStatus(invoiceData.invoiceNumber);
+        if (!result.success) return { success: false, error: result.error };
+        const status = (result.transactionStatus || '').toUpperCase();
+        const paid = dokuStatusIsPaid(result.transactionStatus);
+        return {
+            success: true,
+            transactionStatus: paid ? 'settlement' : status || 'pending',
+        };
+    } catch (err) {
+        console.error('checkMidtransPaymentStatus:', err);
+        return { success: false, error: err?.message || 'Gagal cek status pembayaran.' };
     }
 }
 
@@ -29,7 +54,6 @@ export async function completePurchase(orderId) {
             return { success: false, error: 'User not authenticated' };
         }
 
-        // Get invoice by orderId
         const invoicesSnapshot = await adminDb
             .collection('invoices')
             .where('orderId', '==', orderId)
@@ -43,24 +67,23 @@ export async function completePurchase(orderId) {
 
         const invoiceDoc = invoicesSnapshot.docs[0];
         const invoiceData = invoiceDoc.data();
+        const wasAlreadyPaid = invoiceData.status === 'paid';
 
-        // Verify payment status
-        const { checkMidtransPaymentStatus: checkPayment } = await import('./midtrans');
-        const paymentStatus = await checkPayment(orderId);
-        
-        if (!paymentStatus.success) {
-            return { success: false, error: 'Failed to verify payment status' };
+        if (!wasAlreadyPaid) {
+            if (invoiceData.paymentMethod === 'doku') {
+                const { checkDokuOrderStatus } = await import('./doku');
+                const statusResult = await checkDokuOrderStatus(invoiceData.invoiceNumber);
+                if (!statusResult.success) {
+                    return { success: false, error: statusResult.error || 'Gagal verifikasi pembayaran.' };
+                }
+                if (!dokuStatusIsPaid(statusResult.transactionStatus)) {
+                    return { success: false, error: 'Pembayaran belum selesai atau gagal.' };
+                }
+            } else {
+                return { success: false, error: 'Verifikasi pembayaran tidak tersedia. Hubungi admin untuk konfirmasi pembayaran.' };
+            }
         }
 
-        // Only proceed if payment is successful
-        if (paymentStatus.transactionStatus !== 'settlement' && paymentStatus.transactionStatus !== 'capture') {
-            return { 
-                success: false, 
-                error: `Payment status is ${paymentStatus.transactionStatus}, not completed yet` 
-            };
-        }
-
-        // Get participant document
         const participantRef = adminDb.collection('participants').doc(user.uid);
         const participantDoc = await participantRef.get();
 
@@ -70,31 +93,166 @@ export async function completePurchase(orderId) {
 
         const participantData = participantDoc.data();
         const enrolledClasses = participantData.enrolledClasses || [];
-
-        // Only add to enrolledClasses for class/service purchases (not product/merch)
         const serviceId = invoiceData.serviceId;
         const isAlreadyEnrolled = serviceId && enrolledClasses.some(cls => cls.id === serviceId);
+        const isMilestone = !!(invoiceData.isMilestoneInvoice && invoiceData.classPurchaseOrderId && serviceId);
+
+        if (wasAlreadyPaid) {
+            if (isMilestone) {
+                const ordSnap = await adminDb.collection('classPurchaseOrders').doc(invoiceData.classPurchaseOrderId).get();
+                if (!ordSnap.exists) {
+                    return { success: false, error: 'Data pembayaran bertahap tidak ditemukan.' };
+                }
+                const ord = ordSnap.data();
+                const paid = ord.paidMilestoneCount || 0;
+                const mc = ord.milestoneCount || 1;
+                return {
+                    success: true,
+                    alreadyProcessed: true,
+                    milestonePartial: ord.status === 'in_progress' && paid < mc,
+                    paidMilestoneCount: paid,
+                    milestoneCount: mc,
+                    purchaseOrderId: invoiceData.classPurchaseOrderId,
+                    message:
+                        paid >= mc
+                            ? 'Pembayaran kelas sudah selesai sebelumnya.'
+                            : `Status: ${paid} dari ${mc} tahap sudah dibayar.`,
+                };
+            }
+            return { success: true, alreadyProcessed: true, message: 'Transaksi sudah selesai.' };
+        }
+
+        const removeUndefined = (obj) => {
+            const cleaned = {};
+            Object.keys(obj).forEach((key) => {
+                if (obj[key] !== undefined) {
+                    cleaned[key] = obj[key];
+                }
+            });
+            return cleaned;
+        };
+
+        const revalidatePurchasePaths = () => {
+            revalidatePath('/');
+            revalidatePath('/services');
+            revalidatePath('/profile');
+            revalidatePath('/payments-history');
+        };
+
+        const sendPaidWa = async (body) => {
+            const clientPhone = invoiceData.client?.phone || participantData.phone || participantData.phoneNumber;
+            if (!clientPhone) return;
+            try {
+                const { sendMekariWhatsApp } = await import('@/lib/mekariWa');
+                await sendMekariWhatsApp(clientPhone, body);
+            } catch (e) {
+                console.warn('Mekari WA notif pembayaran:', e?.message || e);
+            }
+        };
+
+        if (isMilestone) {
+            const orderRef = adminDb.collection('classPurchaseOrders').doc(invoiceData.classPurchaseOrderId);
+            const orderSnap = await orderRef.get();
+            if (!orderSnap.exists) {
+                return { success: false, error: 'Data order pembayaran bertahap tidak ditemukan.' };
+            }
+            const order = orderSnap.data();
+            const expected = (order.paidMilestoneCount || 0) + 1;
+            if (invoiceData.milestoneIndex !== expected) {
+                return { success: false, error: 'Urutan pembayaran tidak valid. Hubungi admin.' };
+            }
+            const newPaid = expected;
+            const mc = order.milestoneCount || 1;
+            const fullPrice = parseFloat(order.totalPrice ?? invoiceData.classFullPrice ?? invoiceData.grandTotal ?? 0);
+
+            await adminDb.collection('invoices').doc(invoiceDoc.id).update({
+                status: 'paid',
+                paidDate: new Date(),
+                paymentStatus: invoiceData.paymentMethod === 'doku' ? 'SUCCESS' : 'manual',
+                paymentMethod: invoiceData.paymentMethod || '',
+                updatedAt: new Date(),
+            });
+
+            if (newPaid < mc) {
+                await orderRef.update({
+                    paidMilestoneCount: newPaid,
+                    updatedAt: new Date(),
+                });
+                await sendPaidWa(
+                    `Pembayaran tahap ${newPaid}/${mc} berhasil.\n\n*${order.serviceName || 'Kelas'}*\nInvoice: ${invoiceData.invoiceNumber || invoiceDoc.id}\nSelesaikan sisa pembayaran untuk akses kelas.`
+                );
+                revalidatePurchasePaths();
+                return {
+                    success: true,
+                    milestonePartial: true,
+                    paidMilestoneCount: newPaid,
+                    milestoneCount: mc,
+                    purchaseOrderId: invoiceData.classPurchaseOrderId,
+                    message: `Pembayaran tahap ${newPaid} dari ${mc} berhasil. Selesaikan ${mc - newPaid} tahap lagi untuk akses kelas.`,
+                };
+            }
+
+            await orderRef.update({
+                paidMilestoneCount: newPaid,
+                status: 'completed',
+                updatedAt: new Date(),
+            });
+
+            if (serviceId && !isAlreadyEnrolled) {
+                let serviceData = null;
+                const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
+                if (serviceDoc.exists) {
+                    serviceData = serviceDoc.data();
+                }
+
+                const classData = {
+                    id: serviceId,
+                    name: serviceData?.name || invoiceData.items?.[0]?.name || 'Kelas',
+                    title: serviceData?.name || invoiceData.items?.[0]?.name || 'Kelas',
+                    price: fullPrice,
+                    purchaseDate: new Date().toISOString(),
+                    invoiceId: invoiceDoc.id,
+                    invoiceNumber: invoiceData.invoiceNumber,
+                    orderId,
+                    status: 'enrolled',
+                };
+
+                if (serviceData) {
+                    if (serviceData.description) classData.description = serviceData.description;
+                    if (serviceData.category) classData.category = serviceData.category;
+                    if (serviceData.duration) classData.duration = serviceData.duration;
+                    if (serviceData.instructor) classData.instructor = serviceData.instructor;
+                    if (serviceData.capacity) classData.capacity = serviceData.capacity;
+                    if (serviceData.startDate) classData.startDate = serviceData.startDate;
+                    if (serviceData.endDate) classData.endDate = serviceData.endDate;
+                    if (serviceData.imageUrl) classData.imageUrl = serviceData.imageUrl;
+                }
+
+                const newEnrolledClass = removeUndefined(classData);
+                await participantRef.update({
+                    enrolledClasses: [...enrolledClasses, newEnrolledClass],
+                    updatedAt: new Date(),
+                });
+            }
+
+            await sendPaidWa(
+                `Semua tahap lunas. Kelas dapat diakses.\n\n*${order.serviceName || 'Kelas'}*\nInvoice: ${invoiceData.invoiceNumber || invoiceDoc.id}\nTerima kasih.`
+            );
+            revalidatePurchasePaths();
+            return {
+                success: true,
+                milestonePartial: false,
+                message: 'Semua pembayaran selesai. Kelas sekarang dapat Anda akses.',
+            };
+        }
 
         if (serviceId && !isAlreadyEnrolled) {
-            // Get service data
             let serviceData = null;
             const serviceDoc = await adminDb.collection('services').doc(serviceId).get();
             if (serviceDoc.exists) {
                 serviceData = serviceDoc.data();
             }
 
-            // Helper function to remove undefined values
-            const removeUndefined = (obj) => {
-                const cleaned = {};
-                Object.keys(obj).forEach(key => {
-                    if (obj[key] !== undefined) {
-                        cleaned[key] = obj[key];
-                    }
-                });
-                return cleaned;
-            };
-
-            // Build enrolled class object
             const classData = {
                 id: serviceId,
                 name: serviceData?.name || invoiceData.items?.[0]?.name || 'Kelas',
@@ -103,11 +261,10 @@ export async function completePurchase(orderId) {
                 purchaseDate: new Date().toISOString(),
                 invoiceId: invoiceDoc.id,
                 invoiceNumber: invoiceData.invoiceNumber,
-                orderId: orderId,
+                orderId,
                 status: 'enrolled',
             };
 
-            // Add optional fields if they exist
             if (serviceData) {
                 if (serviceData.description) classData.description = serviceData.description;
                 if (serviceData.category) classData.category = serviceData.category;
@@ -120,16 +277,12 @@ export async function completePurchase(orderId) {
             }
 
             const newEnrolledClass = removeUndefined(classData);
-            const updatedEnrolledClasses = [...enrolledClasses, newEnrolledClass];
-
-            // Update participant document
             await participantRef.update({
-                enrolledClasses: updatedEnrolledClasses,
+                enrolledClasses: [...enrolledClasses, newEnrolledClass],
                 updatedAt: new Date(),
             });
         }
 
-        // Apply membership if invoice is for membership purchase/renewal
         const membershipTypeId = invoiceData.membershipTypeId;
         if (membershipTypeId) {
             const typeDoc = await adminDb.collection('membershipTypes').doc(membershipTypeId).get();
@@ -143,7 +296,7 @@ export async function completePurchase(orderId) {
                 const currentEnd = currentMembership.endDate;
                 if (currentEnd) {
                     const end = currentEnd?.toDate ? currentEnd.toDate() : new Date(currentEnd);
-                    if (end > baseDate) baseDate = end; // perpanjang dari akhir periode saat ini
+                    if (end > baseDate) baseDate = end;
                 }
                 const newEnd = new Date(baseDate);
                 newEnd.setMonth(newEnd.getMonth() + durationMonths);
@@ -160,19 +313,19 @@ export async function completePurchase(orderId) {
             }
         }
 
-        // Update invoice status to 'paid'
         await adminDb.collection('invoices').doc(invoiceDoc.id).update({
             status: 'paid',
             paidDate: new Date(),
-            paymentStatus: paymentStatus.transactionStatus,
-            paymentMethod: 'midtrans',
+            paymentStatus: invoiceData.paymentMethod === 'doku' ? 'SUCCESS' : 'manual',
+            paymentMethod: invoiceData.paymentMethod || '',
             updatedAt: new Date(),
         });
 
-        revalidatePath('/');
-        revalidatePath('/services');
-        revalidatePath('/profile');
-        revalidatePath('/payments-history');
+        await sendPaidWa(
+            `Pembayaran Anda telah berhasil.\n\n*${invoiceData.items?.[0]?.name || invoiceData.note || 'Pembelian'}*\nInvoice: ${invoiceData.invoiceNumber || invoiceDoc.id}\nTerima kasih.`
+        );
+
+        revalidatePurchasePaths();
 
         return { success: true, message: 'Purchase completed successfully' };
     } catch (error) {
@@ -182,8 +335,7 @@ export async function completePurchase(orderId) {
 }
 
 /**
- * Get payment history for profile tab with real status from Midtrans.
- * For invoices with orderId, fetches current transaction status from Midtrans and syncs to Firestore.
+ * Get payment history for profile tab (status from Firestore).
  * @param {string} [clientEmail] - Email dari client (useAuth) sebagai fallback jika session kosong
  */
 export async function getPaymentHistoryForProfile(clientEmail) {
@@ -221,8 +373,6 @@ export async function getPaymentHistoryForProfile(clientEmail) {
         }
 
         const payments = [];
-        const { checkMidtransPaymentStatus: checkMidtrans } = await import('./midtrans');
-
         const docs = [...invoicesSnapshot.docs].sort((a, b) => {
             const aData = a.data();
             const bData = b.data();
@@ -234,42 +384,8 @@ export async function getPaymentHistoryForProfile(clientEmail) {
         for (const doc of docs) {
             const data = doc.data();
             const createdAt = data.createdAt?.toDate?.()?.toISOString?.() || data.issueDate?.toDate?.()?.toISOString?.() || null;
-            let status = data.status;
-            let paymentStatus = data.paymentStatus || null;
-
-            // Ambil status real dari Midtrans untuk invoice yang punya orderId (terutama yang masih pending)
-            if (data.orderId) {
-                const needsRefresh = !paymentStatus || status === 'pending' || status === 'unpaid';
-                if (needsRefresh) {
-                    const result = await checkMidtrans(data.orderId);
-                    if (result.success && result.transactionStatus) {
-                        paymentStatus = result.transactionStatus;
-                        if (paymentStatus === 'settlement' || paymentStatus === 'capture') {
-                            status = 'paid';
-                            const completeResult = await completePurchase(data.orderId);
-                            if (!completeResult.success) {
-                                await adminDb.collection('invoices').doc(doc.id).update({
-                                    status: 'paid',
-                                    paymentStatus: paymentStatus,
-                                    paidDate: new Date(),
-                                    updatedAt: new Date(),
-                                });
-                            }
-                        } else if (paymentStatus === 'deny' || paymentStatus === 'cancel' || paymentStatus === 'expire') {
-                            status = status || 'failed';
-                            await adminDb.collection('invoices').doc(doc.id).update({
-                                paymentStatus: paymentStatus,
-                                updatedAt: new Date(),
-                            });
-                        } else {
-                            await adminDb.collection('invoices').doc(doc.id).update({
-                                paymentStatus: paymentStatus,
-                                updatedAt: new Date(),
-                            });
-                        }
-                    }
-                }
-            }
+            const status = data.status;
+            const paymentStatus = data.paymentStatus || null;
 
             payments.push({
                 id: doc.id,
@@ -282,12 +398,17 @@ export async function getPaymentHistoryForProfile(clientEmail) {
                 amount: data.amount,
                 status,
                 paymentStatus,
-                paymentMethod: data.paymentMethod || 'midtrans',
+                paymentMethod: data.paymentMethod || '',
                 createdAt,
                 issueDate: data.issueDate?.toDate?.()?.toISOString?.() || null,
                 dueDate: data.dueDate?.toDate?.()?.toISOString?.() || null,
                 paidDate: data.paidDate?.toDate?.()?.toISOString?.() || null,
                 client: data.client,
+                isMilestoneInvoice: !!data.isMilestoneInvoice,
+                classPurchaseOrderId: data.classPurchaseOrderId || null,
+                milestoneIndex: data.milestoneIndex ?? null,
+                milestoneTotalCount: data.milestoneTotalCount ?? null,
+                classFullPrice: data.classFullPrice ?? null,
             });
         }
 

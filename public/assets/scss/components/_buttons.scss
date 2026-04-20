@@ -1,0 +1,71 @@
+@use '../utils' as *;
+
+/*=============================
+	1. Button style
+===============================*/
+.tg-button-wrap {
+    @include flexbox();
+}
+.btn {
+    user-select: none;
+    -moz-user-select: none;
+    background: var(--tg-theme-primary) none repeat scroll 0 0;
+    border: medium none;
+    color: var(--tg-common-color-white);
+    cursor: pointer;
+    display: inline-block;
+    font-size: 15px;
+    font-weight: var(--tg-fw-semi-bold);
+    letter-spacing: .5px;
+    line-height: 1;
+    margin-bottom: 0;
+    padding: 19px 24px 16px 24px;
+    text-align: center;
+    text-transform: uppercase;
+    touch-action: manipulation;
+    @include transition(.3s);
+    vertical-align: middle;
+    @include border-radius(4px);
+    white-space: nowrap;
+    overflow: hidden;
+    &:hover {
+        background: var(--tg-theme-secondary);
+        color: var(--tg-common-color-white);
+    }
+    & .text {
+        display: block;
+    }
+    &.tg-svg {
+        @include flexbox();
+        align-items: center;
+        gap: 10px;
+    }
+    & .svg-icon {
+        width: 14px;
+        display: block;
+        margin-top: -3px;
+    }
+    &.btn-border {
+        background: var(--tg-common-color-white);
+        border: 1px solid var(--tg-theme-primary);
+        color: var(--tg-theme-primary);
+        padding: 19px 23px 16px 23px;
+        & svg path {
+            stroke: var(--tg-theme-primary);
+        }
+        &:hover {
+            background: var(--tg-theme-primary);
+            color: var(--tg-common-color-white);
+            & svg path {
+                stroke: var(--tg-common-color-white)
+            }
+        }
+    }
+    &.white-btn {
+        background: var(--tg-common-color-white);
+        color: var(--tg-theme-secondary);
+        & svg path {
+            stroke: var(--tg-theme-secondary);
+        }
+    }
+}

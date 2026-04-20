@@ -48,21 +48,12 @@ const RegisterForm = ({ path }) => {
                 // Continue anyway, user can still login
             }
 
-            const idToken = await userCredential.user.getIdToken()
+            const idToken = await userCredential.user.getIdToken(false)
             const result = await createSession(idToken)
             if (!result.success) {
                 throw new Error('Session creation failed. ' + result.error);
             }
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Account Created',
-                text: userRole === 'admin' 
-                    ? 'Selamat! Akun Admin berhasil dibuat.' 
-                    : 'Selamat! Akun Anda berhasil dibuat sebagai Peserta.',
-                showConfirmButton: false,
-                timer: 2000
-            })
             router.push('/')
         } catch (error) {
             Swal.fire('Error', error.message, 'error')
@@ -96,21 +87,13 @@ const RegisterForm = ({ path }) => {
             }
 
             // Create session
-            const idToken = await user.getIdToken()
+            const idToken = await user.getIdToken(false)
             const sessionResult = await createSession(idToken)
-            
+
             if (!sessionResult.success) {
                 throw new Error('Session creation failed. ' + sessionResult.error)
             }
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Account Created',
-                text: `Welcome, ${user.displayName || user.email}! Your account has been created successfully.`,
-                showConfirmButton: false,
-                timer: 2000
-            })
-            
             router.push('/')
         } catch (error) {
             console.error('Google sign in error:', error)

@@ -38,11 +38,24 @@ function serializeFirestoreData(data) {
  */
 export async function getServiceReviews(serviceId) {
     try {
-        const reviewsSnapshot = await adminDb
-            .collection('reviews')
-            .where('serviceId', '==', serviceId)
-            .orderBy('createdAt', 'desc')
-            .get();
+        let reviewsSnapshot;
+        try {
+            reviewsSnapshot = await adminDb
+                .collection('reviews')
+                .where('serviceId', '==', serviceId)
+                .orderBy('createdAt', 'desc')
+                .get();
+        } catch (queryError) {
+            // Fallback when composite index is not created yet in Firestore.
+            if (queryError?.code !== 9) {
+                throw queryError;
+            }
+
+            reviewsSnapshot = await adminDb
+                .collection('reviews')
+                .where('serviceId', '==', serviceId)
+                .get();
+        }
 
         const reviews = [];
         
@@ -74,6 +87,12 @@ export async function getServiceReviews(serviceId) {
                 updatedAt: serializeFirestoreData(data.updatedAt),
             });
         }
+
+        reviews.sort((a, b) => {
+            const aTime = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+            const bTime = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+            return bTime - aTime;
+        });
 
         // Calculate average rating
         const totalRating = reviews.reduce((sum, review) => sum + (review.rating || 0), 0);

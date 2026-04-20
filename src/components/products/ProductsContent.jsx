@@ -5,8 +5,8 @@ import { db } from '@/lib/firebase/config'
 import { collection, getDocs } from 'firebase/firestore'
 import { FiPackage, FiShoppingCart } from 'react-icons/fi'
 import Link from 'next/link'
-import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import ProductCardCover from '@/components/products/ProductCardCover'
 
 const ProductsContent = () => {
     const { user } = useAuth()
@@ -74,17 +74,12 @@ const ProductsContent = () => {
                                 return (
                                     <div key={product.id} className="col-lg-4 col-md-6">
                                         <div className="card border-0 shadow-sm h-100">
-                                            {product.imageUrl && (
-                                                <div className="position-relative" style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
-                                                    <Image
-                                                        src={product.imageUrl}
-                                                        alt={product.name}
-                                                        fill
-                                                        className="object-cover"
-                                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                                    />
-                                                </div>
-                                            )}
+                                            <ProductCardCover
+                                                imageUrl={product.imageUrl}
+                                                alt={product.name}
+                                                height={200}
+                                                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                            />
                                             <div className="card-body p-4">
                                                 <div className="mb-3">
                                                     <span className="badge bg-soft-primary text-primary mb-2">

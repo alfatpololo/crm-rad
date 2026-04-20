@@ -1,0 +1,38 @@
+@use '../utils' as *;
+
+/*=============================
+    06. Brand
+===============================*/
+.brand {
+    &-area {
+        border-bottom: 1px solid var(--tg-border-3);
+        padding: 49px 0;
+        &-two {
+            padding-bottom: 120px;
+        }
+    }
+    &-active {
+        & .col {
+            padding-left: 15px;
+            padding-right: 15px;
+        }
+    }
+    &__item {
+        & img {
+            filter: grayscale(1);
+            opacity: .4;
+        }
+        & a {
+            @include flexbox();
+            height: 51px;
+            align-items: center;
+            justify-content: center;
+            &:hover {
+                & img {
+                    filter: grayscale(0);
+                    opacity: 1;
+                }
+            }
+        }
+    }
+}

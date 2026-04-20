@@ -1,4 +1,5 @@
 'use client'
+import '@/lib/sharedAppGlobals'
 import React from 'react'
 import NavigationManu from '@/components/shared/navigationMenu/NavigationMenu'
 import useBootstrapUtils from '@/hooks/useBootstrapUtils'

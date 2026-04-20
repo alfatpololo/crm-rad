@@ -1,0 +1,51 @@
+@use '../utils' as *;
+
+/*=============================
+    17. Quick Action
+===============================*/
+.quick {
+    &__action {
+        &-item {
+            @include flexbox();
+            align-items: center;
+            min-height: 270px;
+            background-position: center;
+            background-size: cover;
+            border-radius: 10px;
+            background-color: #5F1EEA;
+            padding: 40px 50px;
+            margin: 0 0 30px;
+            @media #{$lg} {
+                padding: 40px 40px;
+            }
+            @media #{$xs} {
+                padding: 35px 30px;
+                background-position: left;
+                min-height: 240px;
+            }
+        }
+        &-content {
+            max-width: 50%;
+            @media #{$lg} {
+                max-width: 65%;
+            }
+            @media #{$xs} {
+                max-width: 90%;
+            }
+            & .title {
+                color: var(--tg-common-color-white);
+                font-size: 26px;
+                margin: 0 0 25px;
+                text-transform: capitalize;
+                @media #{$md} {
+                    & br {
+                        display: none;
+                    }
+                }
+                @media #{$xs} {
+                    margin: 0 0 20px;
+                }
+            }
+        }
+    }
+}

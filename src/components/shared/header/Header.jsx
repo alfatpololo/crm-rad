@@ -5,8 +5,13 @@ import NotificationsModal from './NotificationsModal';
 import ProfileModal from './ProfileModal';
 import SearchModal from './SearchModal';
 
-import { NavigationContext } from '@/contentApi/navigationProvider';
+import { NavigationContext } from '@/contentApi/navigationProvider'
 
+function setElDisplay(selector, display) {
+    if (typeof document === 'undefined') return
+    const el = document.querySelector(selector)
+    if (el) el.style.display = display
+}
 
 const Header = () => {
     const { navigationOpen, setNavigationOpen } = useContext(NavigationContext)
@@ -34,17 +39,17 @@ const Header = () => {
             const newWindowWidth = window.innerWidth;
             if (newWindowWidth <= 1024) {
                 document.documentElement.classList.remove('minimenu');
-                document.querySelector('.navigation-down-1600').style.display = 'none';
+                setElDisplay('.navigation-down-1600', 'none');
             }
             else if (newWindowWidth >= 1025 && newWindowWidth <= 1400) {
                 document.documentElement.classList.add('minimenu');
-                document.querySelector('.navigation-up-1600').style.display = 'none';
-                document.querySelector('.navigation-down-1600').style.display = 'block';
+                setElDisplay('.navigation-up-1600', 'none');
+                setElDisplay('.navigation-down-1600', 'block');
             }
             else {
                 document.documentElement.classList.remove('minimenu');
-                document.querySelector('.navigation-up-1600').style.display = 'block';
-                document.querySelector('.navigation-down-1600').style.display = 'none';
+                setElDisplay('.navigation-up-1600', 'block');
+                setElDisplay('.navigation-down-1600', 'none');
             }
         };
 
@@ -98,7 +103,7 @@ const Header = () => {
         }
 
         document.documentElement.classList.add("fsh-infullscreen")
-        document.querySelector("body").classList.add("full-screen-helper")
+        document.body?.classList.add("full-screen-helper")
 
     };
     const fullScreenMinimize = () => {
@@ -113,7 +118,7 @@ const Header = () => {
         }
 
         document.documentElement.classList.remove("fsh-infullscreen")
-        document.querySelector("body").classList.remove("full-screen-helper")
+        document.body?.classList.remove("full-screen-helper")
     }
 
     return (

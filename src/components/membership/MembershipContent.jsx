@@ -19,13 +19,13 @@ export default function MembershipContent({ membership, membershipTypes }) {
                 name: type.name,
                 price: type.price,
                 durationMonths: type.durationMonths,
-            })
+            }, { baseUrl: typeof window !== 'undefined' ? window.location.origin : undefined })
             if (result.success && result.redirectUrl) {
                 window.location.href = `/payments/process?orderId=${result.orderId}&redirectUrl=${encodeURIComponent(result.redirectUrl)}`
                 return
             }
             if (result.success) {
-                await Swal.fire({ icon: 'success', title: 'Berhasil', text: result.message })
+                await Swal.fire({ icon: 'success', title: 'Invoice Berhasil Dibuat', text: result.message || 'Silakan hubungi admin untuk pembayaran.' })
                 router.refresh()
             } else {
                 await Swal.fire({ icon: 'error', title: 'Gagal', text: result.error })

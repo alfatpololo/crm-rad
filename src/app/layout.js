@@ -1,12 +1,14 @@
-import "../assets/scss/theme.scss";
-import 'react-circular-progressbar/dist/styles.css';
-import "react-perfect-scrollbar/dist/css/styles.css";
-import "react-datepicker/dist/react-datepicker.css";
-import "react-datetime/css/react-datetime.css";
+import "./globals.css";
+import "@/assets/scss/theme.scss";
+import dynamic from "next/dynamic";
 import NavigationProvider from "@/contentApi/navigationProvider";
 import SettingSideBarProvider from "@/contentApi/settingSideBarProvider";
-import ThemeCustomizer from "@/components/shared/ThemeCustomizer";
 import { AuthProvider } from "@/context/AuthProvider";
+
+const ThemeCustomizer = dynamic(
+  () => import("@/components/shared/ThemeCustomizer"),
+  { ssr: false }
+);
 
 export const metadata = {
   title: "PT. RAD Indonesia CRM",

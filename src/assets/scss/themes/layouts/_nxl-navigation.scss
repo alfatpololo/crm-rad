@@ -378,3 +378,8 @@ html.minimenu {
 		}
 	}
 }
+
+/* Ruang di bawah daftar menu agar tidak tertutup tombol Logout (fixed di dalam area scroll) */
+.nxl-navigation .navbar-content .nxl-navbar {
+	padding-bottom: 88px;
+}

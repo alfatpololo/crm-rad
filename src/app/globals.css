@@ -1,0 +1,4 @@
+/* Utility kecil untuk landing (tanpa import theme.scss penuh) */
+.object-cover {
+    object-fit: cover;
+}

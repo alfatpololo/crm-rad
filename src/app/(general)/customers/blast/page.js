@@ -8,7 +8,15 @@ export const dynamic = 'force-dynamic'
 
 const BlastPromoPage = async () => {
     const result = await getParticipantsForBlast('all')
-    const participants = result.participants || []
+    const raw = result.participants || []
+    const participants = raw.map(p => ({
+        id: String(p?.id ?? ''),
+        name: String(p?.name ?? ''),
+        email: String(p?.email ?? ''),
+        phone: p?.phone != null && p?.phone !== '' ? String(p.phone).trim() : (p?.phoneNumber != null && p?.phoneNumber !== '' ? String(p.phoneNumber).trim() : ''),
+        enrolledClasses: Number(p?.enrolledClasses) || 0,
+        completedClasses: Number(p?.completedClasses) || 0,
+    }))
 
     return (
         <>

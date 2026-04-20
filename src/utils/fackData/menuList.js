@@ -50,6 +50,18 @@ export const adminMenuList = [
                 subdropdownMenu: false
             },
             {
+                id: 42,
+                name: "Tagihan Pasca-Sertifikasi",
+                path: "/master-data/post-certification-charges",
+                subdropdownMenu: false
+            },
+            {
+                id: 43,
+                name: "Dokumen Wajib (Upload Peserta)",
+                path: "/master-data/document-types",
+                subdropdownMenu: false
+            },
+            {
                 id: 5,
                 name: "Metode Pembayaran",
                 path: "/master-data/payment-methods",
@@ -178,6 +190,13 @@ export const userMenuList = [
         name: "Membership",
         path: "/membership",
         icon: 'feather-award',
+        dropdownMenu: []
+    },
+    {
+        id: 71,
+        name: "Lengkapi Data (CV & Ijazah)",
+        path: "/documents",
+        icon: 'feather-file-text',
         dropdownMenu: []
     },
     {

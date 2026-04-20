@@ -1,5 +1,6 @@
 import React from 'react'
 import { FiBook, FiCheckCircle, FiAward, FiDollarSign } from 'react-icons/fi'
+import { formatShortCurrency } from '@/utils/formatCurrency'
 
 const StatCard = ({ title, value, icon, color }) => (
     <div className="col-xxl-3 col-md-6 mb-4">
@@ -8,7 +9,7 @@ const StatCard = ({ title, value, icon, color }) => (
                 <div className="d-flex align-items-center justify-content-between">
                     <div>
                         <p className="text-muted small mb-1">{title}</p>
-                        <h4 className="fw-bold mb-0 text-dark">{value}</h4>
+                        <h4 className="fw-bold mb-0 text-dark text-truncate" style={{ maxWidth: '100%' }}>{value}</h4>
                     </div>
                     <div className={`avatar-text avatar-lg bg-soft-${color} text-${color} rounded-circle`} style={{ width: '56px', height: '56px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                         {icon}
@@ -44,7 +45,7 @@ const ParticipantDashboardStats = ({ stats }) => {
                 />
                 <StatCard
                     title="Total Pembayaran"
-                    value="Rp 0"
+                    value={formatShortCurrency(0)}
                     icon={<FiDollarSign size={24} />}
                     color="info"
                 />
@@ -74,7 +75,7 @@ const ParticipantDashboardStats = ({ stats }) => {
             />
             <StatCard
                 title="Total Pembayaran"
-                value={stats.totalPaid || 'Rp 0'}
+                value={formatShortCurrency(stats.totalPaid ?? 0)}
                 icon={<FiDollarSign size={24} />}
                 color="info"
             />

@@ -1,0 +1,317 @@
+@use '../utils' as *;
+
+/*=============================
+    11. Testimonial
+===============================*/
+.section-pb-57 {
+    padding-bottom: 57px;
+}
+.testimonial {
+    &-bg {
+        background-position: center;
+        background-size: cover;
+    }
+    &__image {
+        &-wrapper {
+            margin: 0 0 0 72px;
+            z-index: 1;
+            @media #{$lg} {
+                margin: 0 0;
+            }
+            @media #{$md} {
+                margin: 0 0 50px;
+            }
+            @media #{$xs} {
+                max-width: 375px;
+            }
+        }
+        &-active {
+            text-align: right;
+        }
+        &-item {
+            opacity: 1 !important;
+            transition: .3s !important;
+            & img {
+                display: inline-block;
+                @include border-radius(199px);
+            }
+        }
+    }
+    &__shapes {
+        & img {
+            position: absolute;
+            &:first-child {
+                left: 0;
+                top: 15px;
+                z-index: -1;
+            }
+            &:nth-child(2) {
+                top: 0;
+                right: 0;
+                z-index: -1;
+            }
+            &:last-child {
+                left: 36px;
+                bottom: 10px;
+                z-index: 1;
+            }
+        }
+    }
+    &__content {
+        &-wrapper {
+            margin: 0 85px 0 70px;
+            @media #{$lg} {
+                margin: 0 0 0 50px;
+            }
+            @media #{$md} {
+                margin: 0 0;
+            }
+        }
+        &-active {
+            margin: 0 -15px;
+        }
+        &-item {
+            padding: 0 15px;
+            & p {
+                color: var(--tg-common-color-gray);
+                font-size: 18px;
+                font-weight: var(--tg-fw-medium);
+            }
+        }
+        &-icon {
+            margin: 0 0 19px;
+            & img {
+                max-width: 49px;
+            }
+        }
+        &-avatar {
+            position: relative;
+            margin: 12px 0 0;
+            padding: 30px 0 0;
+            border-top: 1px solid var(--tg-border-5);
+            &::before {
+                content: "";
+                position: absolute;
+                left: 0;
+                top: -2.5px;
+                width: 40px;
+                height: 5px;
+                @include border-radius(50px);
+                background: var(--tg-common-color-yellow);
+            }
+            & .name {
+                color: var(--tg-common-color-white);
+                font-weight: var(--tg-fw-medium);
+                font-size: 20px;
+                margin: 0 0 3px;
+            }
+            & .designation {
+                display: block;
+                color: #B2BDCD;
+                font-family: var(--tg-heading-font-family);
+            }
+        }
+        &-nav {
+            @include flexbox();
+            align-items: center;
+            gap: 10px;
+            margin: 35px 0 0;
+            & button {
+                border: none;
+                background: #24406B;
+                padding: 0 0;
+                width: 48px;
+                height: 48px;
+                @include border-radius(6px);
+                @include flexbox();
+                align-items: center;
+                justify-content: center;
+                color: var(--tg-common-color-white);
+                font-size: 18px;
+                &:hover {
+                    background: var(--tg-theme-primary);
+                }
+                &.slick-prev {
+                    @include transform(rotate(180deg));
+                }
+            }
+        }
+    }
+}
+.area-bg {
+    background-position: center;
+    background-size: cover;
+}
+.testimonial {
+    &__wrapper {
+        position: relative;
+        z-index: 1;
+    }
+    &-active {
+        z-index: 2;
+        & .slick-arrow {
+            position: absolute;
+            top: 50%;
+            @include transform(translateY(-50%));
+            left: 130px;
+            @include flexbox();
+            width: 50px;
+            height: 50px;
+            align-items: center;
+            justify-content: center;
+            background: #E7EFFC;
+            padding: 0 0;
+            color: var(--tg-theme-primary);
+            font-size: 20px;
+            border: none;
+            @include border-radius(50%);
+            z-index: 3;
+            @include transition(.3s);
+            @media #{$md} {
+                left: 55px;
+            }
+            &.slick-next {
+                left: auto;
+                right: 130px;
+                @media #{$md} {
+                    left: auto;
+                    right: 55px;
+                }
+            }
+            &.slick-prev {
+                @include transform(translateY(-50%) rotate(180deg));
+            }
+            &:hover {
+                color: var(--tg-common-color-white);
+                background: var(--tg-theme-primary);
+            }
+        }
+    }
+    &__item {
+        text-align: center;
+        background-color: var(--tg-common-color-white);
+        box-shadow: 0px 14px 50px rgba(0, 0, 0, 0.1);
+        border-radius: 40px;
+        margin: 63px 85px;
+        padding: 35px 95px 65px;
+        @media #{$md} {
+            margin: 63px 35px;
+            padding: 35px 70px 65px;
+        }
+        @media #{$xs} {
+            margin: 63px 0;
+            padding: 35px 25px 45px;
+            box-shadow: none;
+        }
+        & p {
+            font-weight: var(--tg-fw-medium);
+            color: #39557E;
+            margin: 0 28px 0;
+        }
+    }
+    &__quote {
+        margin: 0 0 25px;
+        & img {
+            display: inline-block;
+            max-width: 49px;
+        }
+    }
+    &__rating {
+        @include flexbox();
+        justify-content: center;
+        color: #F8BC24;
+        gap: 3px;
+        margin: 0 0 15px;
+    }
+    &__avatar {
+        margin: 16px 0 0;
+        & .name {
+            line-height: 1;
+            color: var(--tg-theme-primary);
+            font-size: 20px;
+            font-weight: var(--tg-fw-medium);
+            margin: 0 0 7px;
+        }
+        & .designation {
+            display: block;
+            line-height: 1;
+        }
+    }
+    &__avatars {
+        @media #{$xs} {
+            display: none;
+        }
+        &>* {
+            position: absolute;
+            border: 4px solid var(--tg-common-color-white);
+            @include border-radius(50%);
+            @include transition(0s);
+            &:nth-child(1) {
+                max-width: 70px;
+                left: -115px;
+                top: 145px;
+                @media #{$xl} {
+                    left: -35px;
+                }
+            }
+            &:nth-child(2) {
+                max-width: 70px;
+                bottom: 220px;
+                left: 62px;
+                @media #{$xl} {
+                    bottom: 195px;
+                }
+            }
+            &:nth-child(3) {
+                max-width: 60px;
+                left: -85px;
+                bottom: 80px;
+                @media #{$xl} {
+                    left: -25px;
+                }
+            }
+            &:nth-child(4) {
+                max-width: 70px;
+                right: 0;
+                top: 135px;
+            }
+            &:nth-child(5) {
+                max-width: 60px;
+                top: 245px;
+                right: 120px;
+                @media #{$xl} {
+                    top: 270px;
+                    right: 85px;
+                }
+            }
+            &:nth-child(6) {
+                max-width: 70px;
+                right: 35px;
+                bottom: 70px;
+            }
+        }
+    }
+    &__shapes-two {
+        @media #{$xs} {
+            display: none;
+        }
+        &>* {
+            position: absolute;
+            &:nth-child(1) {
+                top: 14%;
+                left: 21%;
+                @media #{$xl} {
+                    left: 15%;
+                }
+            }
+            &:nth-child(2) {
+                right: 7%;
+                bottom: 27%;
+                @media #{$xl} {
+                    right: 4%;
+                    bottom: 31%;
+                }
+            }
+        }
+    }
+}

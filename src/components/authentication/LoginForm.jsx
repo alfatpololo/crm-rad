@@ -44,24 +44,13 @@ const LoginForm = ({ registerPath, resetPath }) => {
             }
             
             // Create session - ensure it's created before redirecting
-            const idToken = await user.getIdToken()
-            console.log('🔄 Creating session for user:', user.email)
+            const idToken = await user.getIdToken(false)
             const result = await createSession(idToken)
-            
-            if (!result.success) {
-                console.error('❌ Session creation failed:', result.error)
-                throw new Error('Session creation failed. ' + result.error);
-            }
-            
-            console.log('✅ Session created, user can proceed')
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Login Successful',
-                text: `Welcome, ${user.displayName || user.email}!`,
-                showConfirmButton: false,
-                timer: 1500
-            })
+            if (!result.success) {
+                throw new Error('Session creation failed. ' + result.error)
+            }
+
             router.push(redirectTo)
         } catch (error) {
             console.error('❌ Login error:', error)
@@ -100,25 +89,13 @@ const LoginForm = ({ registerPath, resetPath }) => {
             }
 
             // Create session - ensure it's created before redirecting
-            const idToken = await user.getIdToken()
-            console.log('🔄 Creating session for user:', user.email)
+            const idToken = await user.getIdToken(false)
             const sessionResult = await createSession(idToken)
-            
+
             if (!sessionResult.success) {
-                console.error('❌ Session creation failed:', sessionResult.error)
                 throw new Error('Session creation failed. ' + sessionResult.error)
             }
-            
-            console.log('✅ Session created, user can proceed')
 
-            Swal.fire({
-                icon: 'success',
-                title: 'Login Successful',
-                text: `Welcome, ${user.displayName || user.email}!`,
-                showConfirmButton: false,
-                timer: 1500
-            })
-            
             router.push(redirectTo)
         } catch (error) {
             console.error('Google sign in error:', error)

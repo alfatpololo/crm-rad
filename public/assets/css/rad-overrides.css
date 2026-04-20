@@ -1,0 +1,121 @@
+:root {
+  --rad-primary: #dc3545;
+  --tg-theme-primary: var(--rad-primary);
+  --tg-heading-color: #0f172a;
+  --tg-body-color: #475569;
+  --tg-common-color-blue: var(--rad-primary);
+  --tg-common-color-red: var(--rad-primary);
+  --tg-common-color-yellow: #f59e0b;
+}
+
+.tg-header__area .logo img,
+.footer__logo img,
+.nav-logo img {
+  max-height: 44px;
+  width: auto;
+  object-fit: contain;
+}
+
+/* Header1: tanpa transparent-header (detail kelas dengan breadcrumb gelap). Jangan set position di sini — .sticky-menu dari main.css harus bisa position: fixed saat scroll. */
+.tg-header__area.tg-header--solid {
+  z-index: 99;
+  width: 100%;
+  background: var(--tg-common-color-white, #fff);
+  box-shadow: 0 1px 0 rgba(15, 23, 42, 0.08);
+}
+
+/* Landing: header transparan template cuma z-index:9 → hero/banner (sibling main) sering menangkap klik di area kanan (Dashboard). */
+.tg-header__area.transparent-header {
+  z-index: 1040 !important;
+}
+
+/* Tombol cart / Dashboard harus di atas form search lebar (flex overlap di beberapa lebar layar). */
+.tg-header__area .tgmenu__action {
+  position: relative;
+  z-index: 5;
+}
+
+/* Drawer mobile tertutup masih fixed di kanan — di beberapa browser bisa memakan pointer; matikan sampai dibuka. */
+body:not(.mobile-menu-visible) .tgmobile__menu,
+body:not(.mobile-menu-visible) .tgmobile__menu-backdrop {
+  pointer-events: none !important;
+}
+
+body.mobile-menu-visible .tgmobile__menu,
+body.mobile-menu-visible .tgmobile__menu-backdrop {
+  pointer-events: auto !important;
+}
+
+.btn,
+.tgmenu__action .btn,
+.white-btn,
+.btn.btn-border,
+.courses__item-tag,
+.banner__content .sub-title,
+.categories__item a i,
+.about__info-list-item .icon,
+.banner__fact .icon,
+.tgmenu__search-form button,
+.newsletter__form button,
+.event__content-bottom .price,
+.scroll__top {
+  background-color: var(--rad-primary) !important;
+  border-color: var(--rad-primary) !important;
+  color: #fff !important;
+}
+
+.btn.btn-border,
+.white-btn {
+  color: var(--rad-primary) !important;
+  background: #fff !important;
+}
+
+.banner__content .title span:not(.svg-icon),
+.section__title .sub-title,
+.section__title .title span:not(.svg-icon),
+.section__title .title,
+.banner__content .sub-title,
+.banner__phone .number-info .number,
+.banner__phone .number-info .number a,
+.courses__item-content .title a:hover,
+.courses__item-meta li i,
+.courses__item-rating .rating-count,
+.about__info-list-item .content,
+.categories__item:hover .name,
+.categories__item:hover .courses,
+.testimonial__content-avatar .name,
+.navigation li.active > a,
+.navigation li:hover > a {
+  color: var(--rad-primary) !important;
+}
+
+.banner__content .title .svg-icon path,
+.section__title .title .svg-icon path {
+  stroke: var(--rad-primary) !important;
+}
+
+.tg-header__area .tgmenu__nav .navigation li .sub-menu li:hover > a,
+.tg-header__area .tgmenu__nav .navigation li .sub-menu li.active > a {
+  color: var(--rad-primary) !important;
+}
+
+.tg-header__area .tgmenu__nav .navigation li .sub-menu li > a::after,
+.tg-header__area .tgmenu__nav .navigation > li > a::before,
+.courses__item::before,
+.instructor__content .right .social-list li a:hover {
+  background: var(--rad-primary) !important;
+}
+
+.courses__item,
+.categories__item,
+.instructor__item,
+.blog__post-item {
+  border-color: rgba(220, 53, 69, 0.18) !important;
+}
+
+/* AOS attributes are present in Eduvalt markup; force visible when AOS JS is not initialized */
+[data-aos] {
+  opacity: 1 !important;
+  transform: none !important;
+}
+

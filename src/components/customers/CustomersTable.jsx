@@ -5,8 +5,8 @@ import { FiAlertOctagon, FiArchive, FiClock, FiEdit3, FiEye, FiMoreHorizontal, F
 import Dropdown from '@/components/shared/Dropdown';
 import SelectDropdown from '@/components/shared/SelectDropdown';
 import Select from 'react-select'
-// import { customersTableData } from '@/utils/fackData/customersTableData';
 import Link from 'next/link';
+import { getWhatsAppChatUrl } from '@/lib/mekariWa';
 
 
 const actions = [
@@ -129,10 +129,18 @@ const CustomersTable = ({ data }) => {
         {
             accessorKey: 'phone',
             header: () => 'Phone',
-            cell: (info) => <a href="tel:">{info.getValue()}</a>
-            // meta: {
-            //     className: "fw-bold text-dark"
-            // }
+            cell: (info) => {
+                const phone = info.getValue();
+                const waUrl = phone ? getWhatsAppChatUrl(phone) : null;
+                return (
+                    <div className="d-flex align-items-center gap-2">
+                        <span>{phone || '-'}</span>
+                        {waUrl && (
+                            <a href={waUrl} target="_blank" rel="noopener noreferrer" className="btn btn-success btn-sm py-0 px-1" title="Chat via WhatsApp">WA</a>
+                        )}
+                    </div>
+                );
+            },
         },
         {
             accessorKey: 'date',

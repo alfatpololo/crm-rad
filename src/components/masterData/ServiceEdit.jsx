@@ -7,7 +7,7 @@ import useCloudinaryUpload from '@/hooks/useCloudinaryUpload'
 import { FiUpload, FiX, FiImage } from 'react-icons/fi'
 import Image from 'next/image'
 
-const defaultTier = () => ({ label: '', price: '', minDp: '', installmentTerms: '3, 4, 5' })
+const defaultTier = () => ({ label: '', price: '', startDate: '', endDate: '' })
 
 const ServiceEdit = ({ service }) => {
     const router = useRouter()
@@ -18,14 +18,22 @@ const ServiceEdit = ({ service }) => {
     const [usePriceTiers, setUsePriceTiers] = useState(Array.isArray(service?.priceTiers) && service.priceTiers.length > 0)
     const [priceTiers, setPriceTiers] = useState(
         Array.isArray(service?.priceTiers) && service.priceTiers.length > 0
-            ? service.priceTiers.map(t => ({
-                label: t.label || '',
-                price: t.price ?? '',
-                minDp: t.minDp != null ? t.minDp : '',
-                installmentTerms: Array.isArray(t.installmentTerms) ? t.installmentTerms.join(', ') : (t.installmentTerms || '3, 4, 5'),
-            }))
+            ? service.priceTiers.map(t => {
+                const start = t.startDate && (typeof t.startDate === 'string' ? t.startDate : t.startDate?.toDate?.()?.toISOString?.()?.split('T')[0]);
+                const end = t.endDate && (typeof t.endDate === 'string' ? t.endDate : t.endDate?.toDate?.()?.toISOString?.()?.split('T')[0]);
+                return {
+                    label: t.label || '',
+                    price: t.price ?? '',
+                    startDate: start || '',
+                    endDate: end || '',
+                };
+            })
             : [defaultTier()]
     )
+    const [paymentModel, setPaymentModel] = useState(
+        () => (service?.paymentMilestoneCount >= 3 ? 'installment3' : 'full')
+    )
+    const [markAsFree, setMarkAsFree] = useState(() => !!(service?.isFree || service?.price === 0))
     const [promo, setPromo] = useState(() => {
         const p = service?.promo
         if (!p || !p.enabled) return { enabled: false, type: 'percent', value: '', code: '', label: '', startDate: '', endDate: '' }
@@ -196,6 +204,9 @@ const ServiceEdit = ({ service }) => {
             }
         }
 
+        const pmRaw = formData.get('paymentModel') || paymentModel || 'full'
+        const paymentMilestoneCount = isFree ? '1' : pmRaw === 'installment3' ? '3' : '1'
+
         const data = {
             type: formData.get('type') || 'class',
             name: formData.get('name'),
@@ -210,15 +221,16 @@ const ServiceEdit = ({ service }) => {
             location: formData.get('location') || '',
             status: formData.get('status') || 'active',
             imageUrl: imageUrl || null,
-            installmentTerms: formData.get('installmentTerms') || '3, 4, 5',
-            minDp: formData.get('minDp') !== '' && formData.get('minDp') != null ? formData.get('minDp') : null,
+            installmentTerms: '3, 4, 5',
+            minDp: null,
+            paymentMilestoneCount,
         }
         if (useTiers) {
             data.priceTiers = priceTiers.filter(t => t.label.trim()).map(t => ({
                 label: t.label.trim(),
                 price: parseFloat(t.price) || 0,
-                minDp: t.minDp !== '' && t.minDp != null ? parseFloat(t.minDp) : null,
-                installmentTerms: t.installmentTerms || '3, 4, 5',
+                startDate: t.startDate || null,
+                endDate: t.endDate || null,
             }))
         } else {
             data.priceTiers = []
@@ -359,17 +371,6 @@ const ServiceEdit = ({ service }) => {
                                             placeholder="0" 
                                             disabled={service.isFree || service.price === 0}
                                         />
-                                        <div className="row g-2 mt-2">
-                                            <div className="col-md-6">
-                                                <label className="form-label small">Cicilan (berapa kali bayar)</label>
-                                                <input name="installmentTerms" type="text" className="form-control" placeholder="3, 4, 5" defaultValue={Array.isArray(service.installmentTerms) ? service.installmentTerms.join(', ') : (service.installmentTerms || '3, 4, 5')} />
-                                                <small className="text-muted">Pisah dengan koma</small>
-                                            </div>
-                                            <div className="col-md-6">
-                                                <label className="form-label small">Min DP (Rp)</label>
-                                                <input name="minDp" type="number" className="form-control" min="0" placeholder="Opsional" defaultValue={service.minDp ?? ''} />
-                                            </div>
-                                        </div>
                                         <div className="form-check mt-2">
                                             <input 
                                                 className="form-check-input" 
@@ -380,11 +381,13 @@ const ServiceEdit = ({ service }) => {
                                                 onChange={(e) => {
                                                     const priceInput = document.getElementById('price-input-edit')
                                                     const asterisk = document.getElementById('price-required-asterisk-edit')
+                                                    setMarkAsFree(e.target.checked)
                                                     if (asterisk) asterisk.style.display = e.target.checked ? 'none' : 'inline'
                                                     if (priceInput) {
                                                         priceInput.value = e.target.checked ? '0' : (service.price || '0')
                                                         priceInput.disabled = e.target.checked
                                                     }
+                                                    if (e.target.checked) setPaymentModel('full')
                                                 }}
                                             />
                                             <label className="form-check-label" htmlFor="isFree-checkbox-edit">
@@ -395,10 +398,12 @@ const ServiceEdit = ({ service }) => {
                                 )}
                                 {usePriceTiers && (
                                     <div className="border rounded p-3 bg-light">
-                                        <p className="small text-muted mb-3">Setiap tier: nama, harga, cicilan (berapa kali bayar), dan minimal DP.</p>
+                                        <p className="small text-muted mb-3">
+                                            <strong>Tier</strong>: nama + harga + periode aktif.
+                                        </p>
                                         {priceTiers.map((tier, idx) => (
                                             <div key={idx} className="row g-2 mb-3 align-items-end">
-                                                <div className="col-md-2">
+                                                <div className="col-md-3">
                                                     <label className="form-label small">Nama Tier</label>
                                                     <input type="text" className="form-control form-control-sm" placeholder="e.g. Early Bird" value={tier.label}
                                                         onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], label: e.target.value }; setPriceTiers(next) }} />
@@ -408,15 +413,15 @@ const ServiceEdit = ({ service }) => {
                                                     <input type="number" className="form-control form-control-sm" min="0" placeholder="0" value={tier.price}
                                                         onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], price: e.target.value }; setPriceTiers(next) }} />
                                                 </div>
-                                                <div className="col-md-2">
-                                                    <label className="form-label small">Cicilan (kali)</label>
-                                                    <input type="text" className="form-control form-control-sm" placeholder="3, 4, 5" value={tier.installmentTerms}
-                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], installmentTerms: e.target.value }; setPriceTiers(next) }} />
+                                                <div className="col-md-3">
+                                                    <label className="form-label small">Aktif dari</label>
+                                                    <input type="date" className="form-control form-control-sm" value={tier.startDate || ''}
+                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], startDate: e.target.value }; setPriceTiers(next) }} />
                                                 </div>
-                                                <div className="col-md-2">
-                                                    <label className="form-label small">Min DP (Rp)</label>
-                                                    <input type="number" className="form-control form-control-sm" min="0" placeholder="Opsional" value={tier.minDp}
-                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], minDp: e.target.value }; setPriceTiers(next) }} />
+                                                <div className="col-md-3">
+                                                    <label className="form-label small">Aktif sampai</label>
+                                                    <input type="date" className="form-control form-control-sm" value={tier.endDate || ''}
+                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], endDate: e.target.value }; setPriceTiers(next) }} />
                                                 </div>
                                                 <div className="col-md-1">
                                                     <button type="button" className="btn btn-sm btn-outline-danger"
@@ -429,6 +434,45 @@ const ServiceEdit = ({ service }) => {
                                         <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setPriceTiers([...priceTiers, defaultTier()])}>
                                             + Tambah Tier
                                         </button>
+                                    </div>
+                                )}
+
+                                {(usePriceTiers || !markAsFree) && (
+                                    <div className="mt-3 pt-3 border-top">
+                                        <label className="form-label small fw-semibold d-block mb-1">Akses kelas (aturan pembayaran)</label>
+                                        <p className="small text-muted mb-3">
+                                            Kapan peserta boleh akses materi setelah bayar — <strong>tidak dicampur</strong> dengan pengaturan tier. Nominal mengikuti tier yang sedang aktif.
+                                        </p>
+                                        <div className="border rounded p-3 bg-light">
+                                            <div className="form-check mb-2">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="radio"
+                                                    name="paymentModel"
+                                                    id="pm-full-edit"
+                                                    value="full"
+                                                    checked={paymentModel === 'full'}
+                                                    onChange={() => setPaymentModel('full')}
+                                                />
+                                                <label className="form-check-label" htmlFor="pm-full-edit">
+                                                    <strong>Bayar penuh sekali</strong> — total (tier aktif) 1×; setelah lunas langsung akses.
+                                                </label>
+                                            </div>
+                                            <div className="form-check mb-0">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="radio"
+                                                    name="paymentModel"
+                                                    id="pm-inst3-edit"
+                                                    value="installment3"
+                                                    checked={paymentModel === 'installment3'}
+                                                    onChange={() => setPaymentModel('installment3')}
+                                                />
+                                                <label className="form-check-label" htmlFor="pm-inst3-edit">
+                                                    <strong>Cicilan 3× ke gateway</strong> — total dibagi 3; akses setelah pembayaran ke-3 lunas.
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>

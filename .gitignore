@@ -12,12 +12,16 @@
 # next.js
 /.next/
 /out/
+# dev runner marker (scripts/dev.js)
+.next-dev-dirty
+.next-dev-dirty*
 
 # production
 /build
 
 # misc
 .DS_Store
+middleware 2.js
 *.pem
 
 # debug

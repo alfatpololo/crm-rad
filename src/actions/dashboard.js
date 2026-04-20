@@ -43,12 +43,12 @@ export async function getDashboardStats() {
         });
 
         return {
-            revenue: totalRevenue.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
-            unpaid: totalUnpaid.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' }),
+            revenue: totalRevenue,
+            unpaid: totalUnpaid,
             participants: participantsCount,
             totalClasses: totalClasses,
             totalInvoices: totalInvoices,
-            pendingPayments: pendingPayments.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' })
+            pendingPayments: pendingPayments
         };
 
     } catch (error) {

@@ -7,8 +7,8 @@ import { FiBook, FiCalendar, FiClock, FiUsers, FiDollarSign, FiShoppingCart } fr
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import Swal from 'sweetalert2'
-import Image from 'next/image'
 import { getApplicablePriceTier, getPromoDiscount } from '@/utils/servicePrice'
+import ServiceCardCover from '@/components/services/ServiceCardCover'
 
 const ServicesContent = () => {
     const { user } = useAuth()
@@ -199,8 +199,20 @@ const ServicesContent = () => {
             const promoResult = getPromoDiscount(service, tier.price, '', new Date())
             const displayPrice = promoResult.applied ? promoResult.finalPrice : tier.price
             const tierLabel = tier.label ? ` (${tier.label})` : ''
-            const cicilanText = tier.installmentTerms?.length ? tier.installmentTerms.map(x => x + 'x').join(', ') : '3x, 4x, 6x, 12x'
             const minDpText = tier.minDp != null && tier.minDp > 0 ? `<p class="small text-muted mb-0">Min. DP: <strong>Rp ${Number(tier.minDp).toLocaleString('id-ID')}</strong></p>` : ''
+            const paymentModeHtml = !isFree
+                ? `<div class="mb-3 p-2 rounded border bg-light">
+                     <p class="small fw-semibold mb-2">Cara bayar</p>
+                     <div class="form-check mb-1">
+                       <input class="form-check-input" type="radio" name="svc-payment-mode" id="svc-pay-full-list" value="1" checked />
+                       <label class="form-check-label small" for="svc-pay-full-list"><strong>Lunas sekali</strong> — satu invoice penuh; akses materi setelah pembayaran berhasil.</label>
+                     </div>
+                     <div class="form-check mb-0">
+                       <input class="form-check-input" type="radio" name="svc-payment-mode" id="svc-pay-3-list" value="3" />
+                       <label class="form-check-label small" for="svc-pay-3-list"><strong>Cicilan 3×</strong> — total dibagi 3 via payment gateway; <strong class="text-warning">akses kelas baru setelah pembayaran ke-3</strong> selesai.</label>
+                     </div>
+                   </div>`
+                : ''
             const hasPromoCode = service.promo?.enabled && service.promo?.code && String(service.promo.code).trim() !== ''
             const promoHtml = !isFree && hasPromoCode
                 ? `<p class="small mb-2">Kode promo: <input type="text" id="promo-code-input" class="form-control form-control-sm d-inline-block" style="width:120px" placeholder="${service.promo.code ? 'Masukkan kode' : ''}" /></p>`
@@ -224,7 +236,8 @@ const ServicesContent = () => {
                         ) : (
                             `${priceHtml}
                              ${minDpText}
-                             <p class="small text-muted mb-0">Pembayaran via Midtrans (tunai atau cicilan ${cicilanText}). Setelah pembayaran berhasil, kelas akan ditambahkan ke akun Anda.</p>`
+                             ${paymentModeHtml}
+                             <p class="small text-muted mb-0">Pembayaran melalui payment gateway. Setelah lunas sesuai cara bayar yang Anda pilih, kelas akan ditambahkan ke akun Anda.</p>`
                         )}
                     </div>
                 `,
@@ -238,6 +251,8 @@ const ServicesContent = () => {
             if (!result.isConfirmed) return
 
             const promoCode = typeof document !== 'undefined' ? (document.getElementById('promo-code-input')?.value || '') : ''
+            const paymentModeEl = typeof document !== 'undefined' ? document.querySelector('input[name="svc-payment-mode"]:checked') : null
+            const paymentMilestoneCount = paymentModeEl ? parseInt(paymentModeEl.value, 10) : undefined
 
             Swal.fire({
                 title: 'Memproses...',
@@ -249,9 +264,14 @@ const ServicesContent = () => {
             })
 
             const { purchaseClass } = await import('@/actions/participants')
-            const purchaseResult = await purchaseClass(service.id, service, { promoCode })
+            const purchaseResult = await purchaseClass(service.id, service, {
+                promoCode,
+                baseUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
+                ...(typeof paymentMilestoneCount === 'number' && !isNaN(paymentMilestoneCount) ? { paymentMilestoneCount } : {}),
+            })
 
             if (purchaseResult.success) {
+                Swal.close()
                 // If free class, show success and refresh
                 if (purchaseResult.isFree) {
                     // Refresh enrolled services from Firestore
@@ -282,43 +302,65 @@ const ServicesContent = () => {
                     return
                 }
                 
-                // Check if payment redirect URL is available (Midtrans integration)
                 if (purchaseResult.redirectUrl) {
-                    // Redirect to Midtrans payment page via our payment process page
                     window.location.href = `/payments/process?orderId=${purchaseResult.orderId}&redirectUrl=${encodeURIComponent(purchaseResult.redirectUrl)}`
-                } else if (purchaseResult.paymentToken) {
-                    // If we have token but no redirect URL, use Snap popup
-                    window.location.href = `/payments/process?orderId=${purchaseResult.orderId}`
                 } else {
-                    // Fallback: Direct enrollment (if no payment gateway)
-                    // Refresh enrolled services from Firestore
-                    const participantDoc = await getDoc(doc(db, 'participants', user.uid))
-                    if (participantDoc.exists()) {
-                        const data = participantDoc.data()
-                        setEnrolledServices(data.enrolledClasses || [])
-                    }
-
-                    // Show success
                     await Swal.fire({
                         icon: 'success',
-                        title: 'Berhasil!',
+                        title: 'Invoice Berhasil Dibuat',
                         html: `
-                            <p><strong>Kelas berhasil dibeli!</strong></p>
-                            <p class="mb-2">Kelas sekarang dapat Anda akses.</p>
-                            <p class="small text-muted mb-0">Invoice: <strong>${purchaseResult.invoiceNumber}</strong></p>
+                            <p><strong>${purchaseResult.message || 'Silakan hubungi admin untuk pembayaran.'}</strong></p>
+                            <p class="small text-muted mb-0">Invoice: <strong>${purchaseResult.invoiceNumber || ''}</strong></p>
                         `,
-                        confirmButtonText: 'Lihat Kelas Saya',
+                        confirmButtonText: 'Riwayat Pembayaran',
                         showCancelButton: true,
                         cancelButtonText: 'Tutup',
                     }).then((result) => {
                         if (result.isConfirmed) {
-                            window.location.href = '/profile'
+                            window.location.href = '/payments-history'
                         } else {
                             window.location.reload()
                         }
                     })
                 }
+            } else if (purchaseResult.code === 'MILESTONE_IN_PROGRESS' && purchaseResult.purchaseOrderId) {
+                Swal.close()
+                await Swal.fire({
+                    icon: 'info',
+                    title: 'Lanjutkan pembayaran cicilan',
+                    html:
+                        `<p class="mb-2">${purchaseResult.error || 'Progres pembayaran cicilan Anda masih ada di tab Pembayaran (Profil).'}</p>` +
+                        '<p class="small text-muted mb-0">Gunakan tombol di bawah untuk ke gateway, atau buka Profil → Pembayaran.</p>',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ke payment gateway',
+                    cancelButtonText: 'Tutup',
+                    confirmButtonColor: '#3085d6',
+                }).then(async (cont) => {
+                    if (!cont.isConfirmed) return
+                    await Swal.fire({
+                        title: 'Memproses…',
+                        allowOutsideClick: false,
+                        didOpen: () => {
+                            Swal.showLoading()
+                        },
+                    })
+                    const { continueMilestonePurchase } = await import('@/actions/participants')
+                    const next = await continueMilestonePurchase(purchaseResult.purchaseOrderId, {
+                        baseUrl: typeof window !== 'undefined' ? window.location.origin : undefined,
+                    })
+                    Swal.close()
+                    if (next.success && next.redirectUrl && next.orderId) {
+                        window.location.href = `/payments/process?orderId=${encodeURIComponent(next.orderId)}&redirectUrl=${encodeURIComponent(next.redirectUrl)}`
+                    } else {
+                        await Swal.fire({
+                            icon: next.success ? 'info' : 'error',
+                            title: next.success ? 'Invoice' : 'Gagal',
+                            text: next.error || next.message || 'Tidak dapat membuat pembayaran berikutnya.',
+                        })
+                    }
+                })
             } else {
+                Swal.close()
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal',
@@ -370,17 +412,12 @@ const ServicesContent = () => {
                             {services.map((service) => (
                                 <div key={service.id} className="col-lg-4 col-md-6">
                                     <div className="card border-0 shadow-sm h-100">
-                                        {service.imageUrl && (
-                                            <div className="position-relative" style={{ width: '100%', height: '200px', overflow: 'hidden' }}>
-                                                <Image
-                                                    src={service.imageUrl}
-                                                    alt={service.name}
-                                                    fill
-                                                    className="object-cover"
-                                                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                                />
-                                            </div>
-                                        )}
+                                        <ServiceCardCover
+                                            imageUrl={service.imageUrl}
+                                            alt={service.name}
+                                            height={200}
+                                            sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                        />
                                         <div className="card-body p-4">
                                             <div className="mb-3">
                                                 <span className="badge bg-soft-primary text-primary mb-2">

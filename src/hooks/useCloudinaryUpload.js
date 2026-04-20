@@ -94,6 +94,54 @@ const useCloudinaryUpload = () => {
         }
     }
 
+    /**
+     * Upload PDF (e.g. CV, Ijazah) to Cloudinary - uses raw upload
+     */
+    const uploadPdf = async (file, folder = 'participant-docs') => {
+        if (!file) {
+            setError('No file selected')
+            return { success: false, error: 'No file selected' }
+        }
+        if (file.type !== 'application/pdf') {
+            setError('File harus format PDF')
+            return { success: false, error: 'File harus format PDF' }
+        }
+        const maxSize = 10 * 1024 * 1024 // 10MB
+        if (file.size > maxSize) {
+            setError('Ukuran file maksimal 10MB')
+            return { success: false, error: 'Ukuran file maksimal 10MB' }
+        }
+        const cloudName = process.env.NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME
+        const uploadPreset = process.env.NEXT_PUBLIC_CLOUDINARY_UPLOAD_PRESET || 'ml_default'
+        if (!cloudName) {
+            setError('Cloudinary not configured')
+            return { success: false, error: 'Cloudinary not configured' }
+        }
+        setUploading(true)
+        setError(null)
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('upload_preset', uploadPreset)
+            if (folder) formData.append('folder', folder)
+            const response = await fetch(
+                `https://api.cloudinary.com/v1_1/${cloudName}/raw/upload`,
+                { method: 'POST', body: formData }
+            )
+            if (!response.ok) {
+                const errData = await response.json()
+                throw new Error(errData.error?.message || 'Upload gagal')
+            }
+            const data = await response.json()
+            setUploading(false)
+            return { success: true, url: data.secure_url, publicId: data.public_id }
+        } catch (err) {
+            setError(err.message)
+            setUploading(false)
+            return { success: false, error: err.message }
+        }
+    }
+
     const resetUpload = () => {
         setUploading(false)
         setUploadProgress(0)
@@ -103,6 +151,7 @@ const useCloudinaryUpload = () => {
 
     return {
         uploadImage,
+        uploadPdf,
         uploading,
         uploadProgress,
         uploadedUrl,

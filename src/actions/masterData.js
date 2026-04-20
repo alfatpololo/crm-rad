@@ -2,6 +2,7 @@
 
 import { adminDb } from '@/lib/firebase/admin';
 import { revalidatePath } from 'next/cache';
+import { normalizePaymentMilestoneCount } from '@/lib/milestonePayment';
 
 // --- Services ---
 
@@ -91,6 +92,8 @@ export async function createService(data) {
                 price: parseFloat(t.price),
                 minDp: t.minDp != null && t.minDp !== '' ? parseFloat(t.minDp) : null,
                 installmentTerms: parseInstallmentTerms(t.installmentTerms).length ? parseInstallmentTerms(t.installmentTerms) : [3, 4, 6, 12],
+                startDate: t.startDate ? new Date(t.startDate) : null,
+                endDate: t.endDate ? new Date(t.endDate) : null,
             }));
             newDoc.price = newDoc.priceTiers[0]?.price ?? 0;
             newDoc.isFree = newDoc.price === 0;
@@ -112,6 +115,7 @@ export async function createService(data) {
         } else {
             newDoc.promo = { enabled: false };
         }
+        newDoc.paymentMilestoneCount = normalizePaymentMilestoneCount(data.paymentMilestoneCount, !!newDoc.isFree);
         Object.keys(newDoc).forEach(key => {
             if (key === 'imageUrl') {
                 if (newDoc[key] === '') delete newDoc[key];
@@ -228,6 +232,8 @@ export async function updateService(id, data) {
                 price: parseFloat(t.price),
                 minDp: t.minDp != null && t.minDp !== '' ? parseFloat(t.minDp) : null,
                 installmentTerms: parseInstallmentTerms(t.installmentTerms).length ? parseInstallmentTerms(t.installmentTerms) : [3, 4, 6, 12],
+                startDate: t.startDate ? new Date(t.startDate) : null,
+                endDate: t.endDate ? new Date(t.endDate) : null,
             }));
             updateDoc.price = updateDoc.priceTiers[0]?.price ?? 0;
             updateDoc.isFree = updateDoc.price === 0;
@@ -250,6 +256,8 @@ export async function updateService(id, data) {
         } else {
             updateDoc.promo = { enabled: false };
         }
+
+        updateDoc.paymentMilestoneCount = normalizePaymentMilestoneCount(data.paymentMilestoneCount, !!updateDoc.isFree);
         
         Object.keys(updateDoc).forEach(key => {
             if (key === 'imageUrl') {

@@ -1,3 +1,5 @@
+import { normalizePaymentMilestoneCount } from '@/lib/milestonePayment';
+
 function parseInstallmentTerms(v) {
     if (v === undefined || v === null) return [3, 4, 6, 12];
     if (Array.isArray(v)) {
@@ -16,22 +18,24 @@ function parseInstallmentTerms(v) {
  * Get the applicable price tier for a service.
  * @param {Object} service - Service object with priceTiers[] or price, installmentTerms, minDp
  * @param {Date} [atDate] - Date to check (default: now), only used if tiers have startDate/endDate
- * @returns {{ price: number, label: string|null, minDp: number|null, installmentTerms: number[], isFree: boolean }}
+ * @returns {{ price: number, label: string|null, minDp: number|null, installmentTerms: number[], isFree: boolean, paymentMilestoneCount: number }}
  */
 export function getApplicablePriceTier(service, atDate = new Date()) {
     if (!service) {
-        return { price: 0, label: null, minDp: null, installmentTerms: [3, 4, 6, 12], isFree: true };
+        return { price: 0, label: null, minDp: null, installmentTerms: [3, 4, 6, 12], isFree: true, paymentMilestoneCount: 1 };
     }
 
     const tiers = service.priceTiers;
     if (!Array.isArray(tiers) || tiers.length === 0) {
         const price = parseFloat(service.price ?? 0);
+        const isFree = service.isFree || price === 0;
         return {
             price,
             label: null,
             minDp: service.minDp != null ? parseFloat(service.minDp) : null,
             installmentTerms: parseInstallmentTerms(service.installmentTerms),
-            isFree: service.isFree || price === 0,
+            isFree,
+            paymentMilestoneCount: normalizePaymentMilestoneCount(service.paymentMilestoneCount, isFree),
         };
     }
 
@@ -46,33 +50,40 @@ export function getApplicablePriceTier(service, atDate = new Date()) {
         const end = toTime(tier.endDate) ?? Infinity;
         if (t >= start && t <= end) {
             const price = parseFloat(tier.price ?? 0);
+            const isFree = price === 0;
             return {
                 price,
                 label: tier.label || null,
                 minDp: tier.minDp != null ? parseFloat(tier.minDp) : null,
                 installmentTerms: parseInstallmentTerms(tier.installmentTerms),
-                isFree: price === 0,
+                isFree,
+                paymentMilestoneCount: normalizePaymentMilestoneCount(service.paymentMilestoneCount, service.isFree || isFree),
             };
         }
     }
 
     const first = tiers[0];
     if (first) {
+        const price = parseFloat(first.price ?? 0);
+        const isFree = price === 0;
         return {
-            price: parseFloat(first.price ?? 0),
+            price,
             label: first.label || null,
             minDp: first.minDp != null ? parseFloat(first.minDp) : null,
             installmentTerms: parseInstallmentTerms(first.installmentTerms),
-            isFree: parseFloat(first.price ?? 0) === 0,
+            isFree,
+            paymentMilestoneCount: normalizePaymentMilestoneCount(service.paymentMilestoneCount, service.isFree || isFree),
         };
     }
     const price = parseFloat(service.price ?? 0);
+    const isFree = service.isFree || price === 0;
     return {
         price,
         label: null,
         minDp: service.minDp != null ? parseFloat(service.minDp) : null,
         installmentTerms: parseInstallmentTerms(service.installmentTerms),
-        isFree: service.isFree || price === 0,
+        isFree,
+        paymentMilestoneCount: normalizePaymentMilestoneCount(service.paymentMilestoneCount, isFree),
     };
 }
 

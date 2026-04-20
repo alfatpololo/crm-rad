@@ -1,0 +1,117 @@
+@use '../utils' as *;
+
+/*=============================
+    15. Fact
+===============================*/
+.fact {
+    &__item {
+        padding: 47px 60px;
+        @include border-radius(20px);
+        margin: 0 0 30px;
+        @media #{$lg} {
+            padding: 40px 40px;
+        }
+        @media #{$sm} {
+            padding: 30px 30px;
+        }
+        &:hover {
+            & .fact__img {
+                & img {
+                    @include transform(scale(.95));
+                }
+            }
+        }
+    }
+    &__content {
+        margin: 0 0 15px;
+        @media #{$xs} {
+            margin: 0 0 25px;
+        }
+        & .count {
+            font-size: 36px;
+            margin: 0 0 5px;
+            @include flexbox();
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        & p {
+            font-family: var(--tg-heading-font-family);
+            color: var(--tg-heading-color);
+            margin: 0 0;
+        }
+    }
+    &__img {
+        min-height: 168px;
+        @include flexbox();
+        align-items: flex-end;
+        justify-content: center;
+        @media #{$xs} {
+            min-height: auto;
+        }
+        & img {
+            display: block;
+            @include transition(.3s);
+        }
+    }
+    &__shapes {
+        & .categories__shapes-item {
+            bottom: auto;
+            left: 6%;
+            top: 27%;
+            @media #{$xl} {
+                left: 1%;
+                top: 9%;
+            }
+            & img {
+                max-width: 77px;
+            }
+        }
+    }
+    &-bg {
+        background-position: center;
+        background-size: cover;
+        padding: 120px 0 90px;
+    }
+    &__item {
+        &-two {
+            background: var(--tg-common-color-white);
+            box-shadow: 0px 4px 24px #EBEEF2;
+            border-radius: 10px;
+            padding: 59px 40px 50px;
+            margin: 0 0 30px;
+            @include transition(.3s);
+            @media #{$lg} {
+                padding: 35px 25px 35px;
+            }
+            &:hover {
+                box-shadow: none;
+            }
+        }
+    }
+    &__icon {
+        &-two {
+            color: var(--tg-theme-primary);
+            font-size: 80px;
+            line-height: 1;
+            margin: 0 0 21px;
+            @media #{$lg} {
+                font-size: 60px;
+                margin: 0 0 18px;
+            }
+        }
+    }
+    &__content {
+        &-two {
+            & .count {
+                font-size: 30px;
+                line-height: 1;
+                margin: 0 0 3px;
+            }
+            & p {
+                line-height: 1.5;
+                margin: 0 0;
+            }
+        }
+    }
+}

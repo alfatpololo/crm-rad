@@ -7,7 +7,7 @@ import useCloudinaryUpload from '@/hooks/useCloudinaryUpload'
 import { FiUpload, FiX, FiImage } from 'react-icons/fi'
 import Image from 'next/image'
 
-const defaultTier = () => ({ label: '', price: '', minDp: '', installmentTerms: '3, 4, 5' })
+const defaultTier = () => ({ label: '', price: '', startDate: '', endDate: '' })
 
 const ServiceCreate = () => {
     const router = useRouter()
@@ -18,6 +18,10 @@ const ServiceCreate = () => {
     const [usePriceTiers, setUsePriceTiers] = useState(false)
     const [priceTiers, setPriceTiers] = useState([defaultTier()])
     const [promo, setPromo] = useState({ enabled: false, type: 'percent', value: '', code: '', label: '', startDate: '', endDate: '' })
+    /** full = lunas 1× langsung akses; installment3 = cicilan 3×, akses setelah tahap ke-3 lunas — aturan kelas, bukan bagian dari tier */
+    const [paymentModel, setPaymentModel] = useState('full')
+    /** Harga tunggal + centang gratis */
+    const [markAsFree, setMarkAsFree] = useState(false)
     const fileInputRef = useRef(null)
     
     // Cloudinary upload hook
@@ -190,6 +194,9 @@ const ServiceCreate = () => {
         const finalIsFree = isFree || price === 0
         const finalPrice = finalIsFree ? 0 : price
 
+        const pmRaw = formData.get('paymentModel') || paymentModel || 'full'
+        const paymentMilestoneCount = finalIsFree ? '1' : pmRaw === 'installment3' ? '3' : '1'
+
         const data = {
             type: formData.get('type') || 'class',
             name: formData.get('name'),
@@ -204,15 +211,16 @@ const ServiceCreate = () => {
             location: formData.get('location') || '',
             status: formData.get('status') || 'active',
             imageUrl: imageUrl || null,
-            installmentTerms: formData.get('installmentTerms') || '3, 4, 5',
-            minDp: formData.get('minDp') !== '' && formData.get('minDp') != null ? formData.get('minDp') : null,
+            installmentTerms: '3, 4, 5',
+            minDp: null,
+            paymentMilestoneCount,
         }
         if (useTiers) {
             data.priceTiers = priceTiers.filter(t => t.label.trim()).map(t => ({
                 label: t.label.trim(),
                 price: parseFloat(t.price) || 0,
-                minDp: t.minDp !== '' && t.minDp != null ? parseFloat(t.minDp) : null,
-                installmentTerms: t.installmentTerms || '3, 4, 5',
+                startDate: t.startDate || null,
+                endDate: t.endDate || null,
             }))
         }
         data.promo = promo.enabled ? {
@@ -334,17 +342,6 @@ const ServiceCreate = () => {
                                             min="0" 
                                             placeholder="0" 
                                         />
-                                        <div className="row g-2 mt-2">
-                                            <div className="col-md-6">
-                                                <label className="form-label small">Cicilan (berapa kali bayar)</label>
-                                                <input name="installmentTerms" type="text" className="form-control" placeholder="3, 4, 5" defaultValue="3, 4, 5" />
-                                                <small className="text-muted">Pisah dengan koma, misal: 3, 4, 5</small>
-                                            </div>
-                                            <div className="col-md-6">
-                                                <label className="form-label small">Min DP (Rp)</label>
-                                                <input name="minDp" type="number" className="form-control" min="0" placeholder="Opsional" />
-                                            </div>
-                                        </div>
                                         <div className="form-check mt-2">
                                             <input 
                                                 className="form-check-input" 
@@ -354,11 +351,13 @@ const ServiceCreate = () => {
                                                 onChange={(e) => {
                                                     const priceInput = document.getElementById('price-input-create')
                                                     const asterisk = document.getElementById('price-required-asterisk')
+                                                    setMarkAsFree(e.target.checked)
                                                     if (e.target.checked) {
                                                         priceInput.value = '0'
                                                         priceInput.required = false
                                                         priceInput.disabled = true
                                                         if (asterisk) asterisk.style.display = 'none'
+                                                        setPaymentModel('full')
                                                     } else {
                                                         priceInput.required = true
                                                         priceInput.disabled = false
@@ -374,10 +373,12 @@ const ServiceCreate = () => {
                                 )}
                                 {usePriceTiers && (
                                     <div className="border rounded p-3 bg-light">
-                                        <p className="small text-muted mb-3">Setiap tier: nama, harga, cicilan (berapa kali bayar), dan minimal DP.</p>
+                                        <p className="small text-muted mb-3">
+                                            <strong>Tier</strong>: nama + harga + periode aktif (mis. Early Bird sampai tanggal tertentu).
+                                        </p>
                                         {priceTiers.map((tier, idx) => (
                                             <div key={idx} className="row g-2 mb-3 align-items-end">
-                                                <div className="col-md-2">
+                                                <div className="col-md-3">
                                                     <label className="form-label small">Nama Tier</label>
                                                     <input
                                                         type="text"
@@ -398,25 +399,22 @@ const ServiceCreate = () => {
                                                         onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], price: e.target.value }; setPriceTiers(next) }}
                                                     />
                                                 </div>
-                                                <div className="col-md-2">
-                                                    <label className="form-label small">Cicilan (kali)</label>
+                                                <div className="col-md-3">
+                                                    <label className="form-label small">Aktif dari</label>
                                                     <input
-                                                        type="text"
+                                                        type="date"
                                                         className="form-control form-control-sm"
-                                                        placeholder="3, 4, 5"
-                                                        value={tier.installmentTerms}
-                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], installmentTerms: e.target.value }; setPriceTiers(next) }}
+                                                        value={tier.startDate || ''}
+                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], startDate: e.target.value }; setPriceTiers(next) }}
                                                     />
                                                 </div>
-                                                <div className="col-md-2">
-                                                    <label className="form-label small">Min DP (Rp)</label>
+                                                <div className="col-md-3">
+                                                    <label className="form-label small">Aktif sampai</label>
                                                     <input
-                                                        type="number"
+                                                        type="date"
                                                         className="form-control form-control-sm"
-                                                        min="0"
-                                                        placeholder="Opsional"
-                                                        value={tier.minDp}
-                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], minDp: e.target.value }; setPriceTiers(next) }}
+                                                        value={tier.endDate || ''}
+                                                        onChange={(e) => { const next = [...priceTiers]; next[idx] = { ...next[idx], endDate: e.target.value }; setPriceTiers(next) }}
                                                     />
                                                 </div>
                                                 <div className="col-md-1">
@@ -429,6 +427,45 @@ const ServiceCreate = () => {
                                         <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setPriceTiers([...priceTiers, defaultTier()])}>
                                             + Tambah Tier
                                         </button>
+                                    </div>
+                                )}
+
+                                {(usePriceTiers || !markAsFree) && (
+                                    <div className="mt-3 pt-3 border-top">
+                                        <label className="form-label small fw-semibold d-block mb-1">Akses kelas (aturan pembayaran)</label>
+                                        <p className="small text-muted mb-3">
+                                            Ini mengatur <strong>kapan peserta boleh akses materi</strong> setelah bayar di payment gateway — terpisah dari daftar tier di atas. Harga yang dipakai tetap mengikuti tier yang aktif.
+                                        </p>
+                                        <div className="border rounded p-3 bg-light">
+                                            <div className="form-check mb-2">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="radio"
+                                                    name="paymentModel"
+                                                    id="pm-full-create"
+                                                    value="full"
+                                                    checked={paymentModel === 'full'}
+                                                    onChange={() => setPaymentModel('full')}
+                                                />
+                                                <label className="form-check-label" htmlFor="pm-full-create">
+                                                    <strong>Bayar penuh sekali</strong> — total (sesuai tier aktif) dibayar 1×; setelah lunas langsung dapat akses.
+                                                </label>
+                                            </div>
+                                            <div className="form-check mb-0">
+                                                <input
+                                                    className="form-check-input"
+                                                    type="radio"
+                                                    name="paymentModel"
+                                                    id="pm-inst3-create"
+                                                    value="installment3"
+                                                    checked={paymentModel === 'installment3'}
+                                                    onChange={() => setPaymentModel('installment3')}
+                                                />
+                                                <label className="form-check-label" htmlFor="pm-inst3-create">
+                                                    <strong>Cicilan 3× ke gateway</strong> — total dibagi 3 invoice; <strong>akses kelas baru setelah pembayaran ke-3</strong> lunas.
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 )}
                             </div>

@@ -1,0 +1,307 @@
+@use '../utils' as *;
+
+/*=============================
+    09. Categories
+===============================*/
+.section-py-130 {
+    padding: 130px 0;
+    @media #{$xs} {
+        padding: 120px 0;
+    }
+}
+.categories {
+    &-area {
+        position: relative;
+    }
+    &__title-wrap {
+        margin-right: 40px;
+        @media #{$lg} {
+            margin: 0 0 70px;
+        }
+        & .section__title {
+            margin: 0 0 23px;
+            & .sub-title {
+                margin: 0 0 10px;
+            }
+        }
+        & p {
+            margin: 0 0 40px;
+        }
+    }
+    &__wrap {
+        position: relative;
+        & > img {
+            position: absolute;
+            @media #{$xs} {
+                display: none;
+            }
+            &:nth-child(1) {
+                max-width: 76px;
+                left: 2.5%;
+                top: 38%;
+            }
+            &:nth-child(2) {
+                max-width: 60px;
+                right: 2%;
+                top: 28%;
+            }
+        }
+        & > .row {
+            --bs-gutter-x: 20px;
+            gap: 20px 0;
+            &:not(:last-child) {
+                margin-bottom: 20px;
+            }
+        }
+    }
+    &__item {
+        text-align: center;
+        & a {
+            @include flexbox();
+            flex-direction: column;
+            background: var(--tg-common-color-gray-2);
+            @include border-radius(10px);
+            padding: 32px 30px 27px;
+            @media #{$xs} {
+                padding: 32px 20px 27px;
+            }
+            & i {
+                width: 83px;
+                height: 83px;
+                flex: 0 0 auto;
+                @include flexbox();
+                align-items: center;
+                justify-content: center;
+                background: var(--tg-common-color-white);
+                @include border-radius(50%);
+                font-size: 44px;
+                color: var(--tg-theme-primary);
+                margin: 0 auto 12px;
+                -webkit-box-shadow: 0px 10px 20px rgba(222, 231, 243, 0.5);
+                box-shadow: 0px 10px 20px rgba(222, 231, 243, 0.5);
+                @include transition(.3s);
+                @media #{$xs} {
+                    width: 75px;
+                    height: 75px;
+                    font-size: 38px;
+                }
+            }
+            & .name {
+                display: block;
+                font-family: var(--tg-heading-font-family);
+                font-weight: var(--tg-fw-medium);
+                font-size: 18px;
+                color: var(--tg-heading-color);
+                margin: 0 0 4px;
+                @media #{$xs} {
+                    font-size: 16px;
+                    margin: 0 0 8px;
+                    line-height: 1.5;
+                }
+            }
+            & .courses {
+                display: block;
+                line-height: 1;
+                font-size: 15px;
+                font-weight: var(--tg-fw-medium);
+                color: #5A7093;
+            }
+            &:hover {
+                & i {
+                    background: var(--tg-theme-primary);
+                    color: var(--tg-common-color-white);
+                    box-shadow: 0px 10px 20px rgba(19, 99, 223, 0.29);
+                }
+            }
+        }
+        &-two a {
+            @include flexbox();
+            align-items: center;
+            padding: 26px;
+            background-color: var(--tg-common-color-gray-2);
+            @include border-radius(8px);
+            margin: 0 0 30px;
+            gap: 10px 25px;
+            @media #{$lg} {
+                gap: 15px 25px;
+                flex-direction: column;
+                text-align: center;
+            }
+            @media #{$xs} {
+                gap: 10px 25px;
+                flex-direction: row;
+                text-align: left;
+            }
+            @media #{$sm} {
+                gap: 15px 25px;
+                flex-direction: column;
+                text-align: center;
+            }
+            & .icon {
+                @include flexbox();
+                align-items: center;
+                justify-content: center;
+                width: 98px;
+                height: 98px;
+                flex: 0 0 auto;
+                background: var(--tg-common-color-white);
+                @include border-radius(10px);
+                font-size: 50px;
+                position: relative;
+                box-shadow: 0px 0px 14px #D4DFED;
+                @include transition(.3s);
+            }
+            & .svg-icon svg {
+                position: absolute;
+                left: 50%;
+                @include transform(translateX(-50%));
+                top: 11px;
+                width: 81px;
+                height: 36px;
+                pointer-events: none;
+                color: #ADC3E1;
+            }
+            & .name {
+                font-size: 19px;
+                font-family: var(--tg-heading-font-family);
+                color: var(--tg-heading-color);
+                font-weight: var(--tg-fw-medium);
+                display: block;
+                @include transition(.3s);
+                line-height: 1.4;
+                margin: 0 0 6px;
+                @media #{$md} {
+                    font-size: 17px;
+                }
+                @media #{$xs} {
+                    font-size: 19px;
+                }
+            }
+            & .courses {
+                display: block;
+                color: #5A7093;
+                font-weight: var(--tg-fw-medium);
+            }
+            &:hover {
+                & .icon {
+                    background: var(--tg-theme-primary);
+                    color: var(--tg-common-color-white);
+                }
+                & .svg-icon svg {
+                    color: var(--tg-common-color-white);
+                }
+                & .name {
+                    color: var(--tg-theme-primary);
+                }
+            }
+        }
+        &-three {
+            margin: 0 0 30px;
+            & a {
+                display: block;
+                @include border-radius(6px);
+                overflow: hidden;
+                position: relative;
+                &:hover {
+                    & .thumb img {
+                        @include transform(scale(1.04));
+                    }
+                }
+            }
+            & .thumb {
+                position: relative;
+                &::before {
+                    content: "";
+                    position: absolute;
+                    left: 0;
+                    bottom: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 50%, rgba(0, 0, 0, 0.62) 92.81%);
+                    z-index: 1;
+                }
+                & img {
+                    width: 100%;
+                    height: 320px;
+                    object-fit: cover;
+                    @include transform(scale(1));
+                    @media #{$xs} {
+                        height: auto;
+                    }
+                }
+            }
+            & .info {
+                position: absolute;
+                left: 15px;
+                bottom: 15px;
+                display: flex;
+                flex-direction: column;
+                font-family: var(--tg-heading-font-family);
+                z-index: 2;
+                & .list {
+                    line-height: 1;
+                }
+                & .courses {
+                    display: inline-block;
+                    background: var(--tg-theme-primary);
+                    color: var(--tg-common-color-white);
+                    padding: 8px 12px;
+                    border-radius: 4px 4px 0px 0px;
+                    font-size: 15px;
+                }
+                & .name {
+                    display: block;
+                    background: var(--tg-common-color-white);
+                    color: var(--tg-heading-color);
+                    font-size: 18px;
+                    font-weight: var(--tg-fw-medium);
+                    border-radius: 4px;
+                    padding: 11px 19px;
+                }
+            }
+        }
+    }
+    &__shapes {
+        &-item {
+            position: absolute;
+            z-index: -1;
+            &:first-child {
+                top: 15%;
+                left: 11%;
+                @media #{$xxl} {
+                    left: 4%;
+                }
+                @media #{$xs} {
+                    display: none;
+                }
+                & img {
+                    max-width: 77px;
+                }
+            }
+            &:last-child {
+                left: 3.5%;
+                bottom: 8%;
+                & img {
+                    max-width: 108px;
+                }
+            }
+            &-two {
+                position: absolute;
+                z-index: -1;
+                &:first-child {
+                    max-width: 60px;
+                    top: 13%;
+                    right: 6%;
+                }
+                &:last-child {
+                    max-width: 108px;
+                    left: 6%;
+                    bottom: 20%;
+                    @media #{$xxl} {
+                        left: 3%;
+                    }
+                }
+            }
+        }
+    }
+}

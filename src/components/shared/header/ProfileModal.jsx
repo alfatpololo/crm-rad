@@ -65,6 +65,10 @@ const ProfileModal = () => {
         fetchProfileData()
     }, [user])
 
+    if (!user) {
+        return null
+    }
+
     const avatarSrc = profileData?.photoURL || '/images/avatar/1.png'
     const displayName = profileData?.displayName || user?.displayName || user?.email?.split('@')[0] || 'User'
     const email = profileData?.email || user?.email || ''

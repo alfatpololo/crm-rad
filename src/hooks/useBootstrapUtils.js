@@ -1,152 +1,121 @@
 'use client'
 import { useEffect } from 'react'
 
+const bootstrapLoadedRef = { current: false }
+
+/**
+ * @param {string | null | undefined} pathName - Pass `null` pada halaman full Eduvalt (landing/detail) supaya tidak load Bootstrap JS yang bentrok dengan menu template.
+ */
 const useBootstrapUtils = (pathName) => {
+    const enabled = pathName != null && pathName !== ''
+
+    // Sekali saat mount: load Bootstrap + tooltip. Jangan hook per pathName — dulu tiap klik navigasi
+    // import ulang + nambah listener tanpa cleanup → aplikasi makin berat sampai klik tidak respons.
     useEffect(() => {
-        let handleResize;
-        let bootstrapLoaded = false;
+        if (!enabled) return
+
+        let cancelled = false
 
         const initBootstrap = async () => {
             try {
-                // Import Bootstrap
-                await import('bootstrap/dist/js/bootstrap.bundle.min');
-                bootstrapLoaded = true;
-
-                if (typeof window !== 'undefined' && typeof document !== 'undefined') {
-                    // Initialize tooltips
-                    tooltip();
-
-                    // Setup dropdown hover behavior
-                    handleResize = () => {
-                        const newWindowWidth = window.innerWidth;
-                        if (newWindowWidth >= 1400) {
-                            document.querySelectorAll(".dropdown").forEach((e) => {
-                                e.addEventListener("mouseover", () => {
-                                    e.querySelector(".dropdown-menu")?.classList.add("show")
-                                })
-                                e.addEventListener("mouseleave", () => {
-                                    e.querySelector(".dropdown-menu")?.classList.remove("show")
-                                })
-                            })
-                        }
-                    };
-
-                    window.addEventListener('resize', handleResize);
-                    handleResize();
-
-                    // Fix Bootstrap modal/offcanvas initialization issues
-                    fixBootstrapComponents();
+                if (!bootstrapLoadedRef.current) {
+                    await import('bootstrap/dist/js/bootstrap.bundle.min')
+                    if (cancelled) return
+                    bootstrapLoadedRef.current = true
                 }
+
+                if (typeof window === 'undefined' || typeof document === 'undefined') return
+
+                tooltip()
+                fixBootstrapComponents()
             } catch (error) {
-                console.error('Error initializing Bootstrap:', error);
+                console.error('Error initializing Bootstrap:', error)
             }
-        };
+        }
 
-        initBootstrap();
+        initBootstrap()
 
-        // Cleanup
         return () => {
-            if (handleResize) {
-                window.removeEventListener('resize', handleResize);
-            }
-        };
+            cancelled = true
+        }
+    }, [enabled])
 
-    }, [pathName]);
-};
+    // Hanya refresh attribute modal/offcanvas saat route berubah (tanpa nambah listener baru berkali-kali)
+    useEffect(() => {
+        if (!enabled) return
+        fixBootstrapComponents()
+    }, [enabled, pathName])
+}
 
-export default useBootstrapUtils;
+export default useBootstrapUtils
 
 function fixBootstrapComponents() {
     try {
-        // Ensure all modals have proper backdrop configuration
-        const modals = document.querySelectorAll('[data-bs-toggle="modal"]');
-        modals.forEach(modal => {
-            const target = modal.getAttribute('data-bs-target');
+        const modals = document.querySelectorAll('[data-bs-toggle="modal"]')
+        modals.forEach((modal) => {
+            const target = modal.getAttribute('data-bs-target')
             if (target) {
-                const modalElement = document.querySelector(target);
+                const modalElement = document.querySelector(target)
                 if (modalElement && !modalElement.hasAttribute('data-bs-backdrop')) {
-                    modalElement.setAttribute('data-bs-backdrop', 'true');
+                    modalElement.setAttribute('data-bs-backdrop', 'true')
                 }
             }
-        });
+        })
 
-        // Ensure all offcanvas have proper backdrop configuration
-        const offcanvas = document.querySelectorAll('[data-bs-toggle="offcanvas"]');
-        offcanvas.forEach(canvas => {
-            const target = canvas.getAttribute('data-bs-target');
+        const offcanvas = document.querySelectorAll('[data-bs-toggle="offcanvas"]')
+        offcanvas.forEach((canvas) => {
+            const target = canvas.getAttribute('data-bs-target')
             if (target) {
-                const canvasElement = document.querySelector(target);
+                const canvasElement = document.querySelector(target)
                 if (canvasElement && !canvasElement.hasAttribute('data-bs-backdrop')) {
-                    canvasElement.setAttribute('data-bs-backdrop', 'true');
+                    canvasElement.setAttribute('data-bs-backdrop', 'true')
                 }
             }
-        });
+        })
     } catch (error) {
-        console.error('Error fixing Bootstrap components:', error);
+        console.error('Error fixing Bootstrap components:', error)
     }
 }
 
 function tooltip() {
-
-    let tooltip = document.querySelector('.custom-tooltip');
-    if (!tooltip) {
-        tooltip = document.createElement("div");
-        tooltip.className = 'custom-tooltip';
-        document.body.appendChild(tooltip);
+    let el = document.querySelector('.custom-tooltip')
+    if (!el) {
+        el = document.createElement('div')
+        el.className = 'custom-tooltip'
+        document.body.appendChild(el)
     }
 
-    // Select all elements with the `data-bs-toggle="tooltip"` attribute
-    const tooltipElements = document.querySelectorAll('[data-toggle="tooltip"]');
-
-    tooltipElements.forEach((element) => {
-        // Show tooltip on mouseenter
-        element.addEventListener("mousemove", (e) => {
-            positionTooltip(element, tooltip);
-            const title = element.getAttribute("data-title");
+    document.querySelectorAll('[data-toggle="tooltip"]').forEach((element) => {
+        const onMove = (e) => {
+            positionTooltip(element, el)
+            const title = element.getAttribute('data-title')
             if (title) {
-                tooltip.textContent = title;
-                tooltip.style.opacity = "1";
-                tooltip.style.display = "block";
+                el.textContent = title
+                el.style.opacity = '1'
+                el.style.display = 'block'
             }
-        });
-
-        // Hide tooltip on mouseleave
-        element.addEventListener("mouseleave", () => {
-            tooltip.style.opacity = "0";
-            tooltip.style.display = "none";
-        });
-    });
+        }
+        const onLeave = () => {
+            el.style.opacity = '0'
+            el.style.display = 'none'
+        }
+        element.addEventListener('mousemove', onMove)
+        element.addEventListener('mouseleave', onLeave)
+    })
 }
 
 function positionTooltip(element, tooltip) {
-    const rect = element.getBoundingClientRect();
-    const tooltipRect = tooltip.getBoundingClientRect();
-    const viewportWidth = window.innerWidth;
-    const viewportHeight = window.innerHeight;
+    const rect = element.getBoundingClientRect()
+    const tooltipRect = tooltip.getBoundingClientRect()
+    const viewportWidth = window.innerWidth
 
-    // Default position: top
-    let top = rect.top - tooltipRect.height - 10; // 10px offset
-    let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2); // Center horizontally
+    let top = rect.top - tooltipRect.height - 10
+    let left = rect.left + rect.width / 2 - tooltipRect.width / 2
 
-    // Check if there's enough space at the top
-    if (top < 0) {
-        // Not enough space at the top, place at the bottom
-        top = rect.bottom + 10;
-    }
+    if (top < 0) top = rect.bottom + 10
+    if (left + tooltipRect.width > viewportWidth) left = rect.left - tooltipRect.width - 10
+    if (left < 0) left = rect.right + 10
 
-    // Check if there's enough space on the right
-    if (left + tooltipRect.width > viewportWidth) {
-        // Not enough space on the right, place on the left
-        left = rect.left - tooltipRect.width - 10;
-    }
-
-    // Check if there's enough space on the left
-    if (left < 0) {
-        // Not enough space on the left, place on the right
-        left = rect.right + 10;
-    }
-
-    // Apply calculated position
-    tooltip.style.top = `${top}px`;
-    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${top}px`
+    tooltip.style.left = `${left}px`
 }

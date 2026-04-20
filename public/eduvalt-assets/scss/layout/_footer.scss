@@ -1,0 +1,233 @@
+@use '../utils' as *;
+
+/*=============================
+    24. Footer
+===============================*/
+.footer {
+    &__top-wrap {
+        padding: 110px 0 55px;
+    }
+    &-widget {
+        margin: 0 0 50px;
+        & ul {
+            & li {
+                margin: 0 0 8px;
+                &:last-child {
+                    margin: 0 0;
+                }
+                & a {
+                    display: inline-block;
+                    font-weight: var(--tg-fw-medium);
+                    color: #B2BDCD;
+                    &:hover {
+                        color: var(--tg-common-color-white);
+                    }
+                }
+            }
+        }
+        &.widget_nav_menu {
+            & ul {
+                & li {
+                    & a {
+                        position: relative;
+                        &::before {
+                            content: "";
+                            position: absolute;
+                            left: 0;
+                            top: 50%;
+                            @include transform(translateY(-50%));
+                            width: 0;
+                            height: 3px;
+                            @include border-radius(50px);
+                            background: var(--tg-theme-primary);
+                            @include transition(.3s);
+                        }
+                        &:hover {
+                            padding-left: 20px;
+                            &::before {
+                                width: 12px;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    &__about {
+        & p {
+            color: #B2BDCD;
+            margin: 0 0 20px;
+        }
+        & ul.list-wrap {
+            & li {
+                @include flexbox();
+                gap: 0 20px;
+                line-height: 1.4;
+                color: var(--tg-common-color-gray);
+                text-transform: uppercase;
+                font-weight: var(--tg-fw-medium);
+                margin: 0 0 13px;
+                & a {
+                    color: var(--tg-common-color-gray);
+                    font-size: 15px;
+                    &:hover {
+                        opacity: .7;
+                    }
+                }
+                &:last-child {
+                    margin: 18px 0 0;
+                }
+            }
+        }
+    }
+    &__logo {
+        margin: 0 0 25px;
+    }
+    &__top {
+        &-wrap {
+            & .row>* {
+                &:nth-child(2) {
+                    & .widget_nav_menu {
+                        margin-left: 85px;
+                        @media #{$md} {
+                            margin-left: 30px;
+                        }
+                        @media #{$xs} {
+                            margin-left: 0;
+                        }
+                    }
+                }
+                &:nth-child(3) {
+                    & .widget_nav_menu {
+                        margin-left: 70px;
+                        @media #{$md} {
+                            margin-left: 0;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    &__working {
+        &-item {
+            position: relative;
+            @include flexbox();
+            justify-content: space-between;
+            color: #B2BDCD;
+            font-weight: var(--tg-fw-medium);
+            gap: 0 30px;
+            padding: 0 0 15px;
+            margin: 0 0 15px;
+            & .day {
+                font-weight: var(--tg-fw-semi-bold);
+                color: var(--tg-common-color-white);
+            }
+            &::after {
+                content: "";
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                height: 1px;
+                background: #39557E;
+            }
+            &:last-child {
+                padding: 0 0;
+                margin: 0 0;
+                &::after {
+                    display: none;
+                }
+            }
+        }
+    }
+    &__newsletter {
+        & .desc {
+            color: #B2BDCD;
+        }
+        & form {
+            position: relative;
+            & [type=email] {
+                background: #10284F;
+                border-radius: 4px;
+                padding: 11px 60px 11px 20px;
+                border: none;
+                color: var(--tg-common-color-white);
+                display: block;
+                width: 100%;
+                &::placeholder {
+                    color: var(--tg-common-color-white);
+                    opacity: .5;
+                }
+            }
+            & [type=submit] {
+                position: absolute;
+                top: 50%;
+                transform: translateY(-50%);
+                right: 7px;
+                width: 36px;
+                height: 36px;
+                border: none;
+                padding: 0 0;
+                background: var(--tg-theme-primary);
+                border-radius: 3px;
+                color: var(--tg-common-color-white);
+                @include flexbox();
+                align-items: center;
+                justify-content: center;
+                &:hover {
+                    opacity: .7;
+                }
+            }
+        }
+    }
+}
+.fw-title {
+    font-size: 24px;
+    margin: 0 0 28px;
+    color: var(--tg-common-color-white);
+}
+.copyright {
+    &__wrapper {
+        border-top: 1px solid #2A4774;
+        padding: 30px 0;
+    }
+    &__text {
+        @media #{$md} {
+            text-align: center;
+        }
+        & p {
+            text-transform: capitalize;
+            color: #8798B3;
+            font-size: 15px;
+            font-family: var(--tg-heading-font-family);
+            margin: 0 0;
+        }
+    }
+    &__menu {
+        @media #{$md} {
+            margin: 10px 0 0;
+        }
+        & ul {
+            gap: 0 15px;
+        }
+        & li {
+            @include flexbox();
+            align-items: center;
+            gap: 0 15px;
+            &::before {
+                content: ".";
+                color: #8798B3;
+            }
+            &:first-child {
+                &::before {
+                    display: none;
+                }
+            }
+            & a {
+                color: #8798B3;
+                font-size: 15px;
+                font-family: var(--tg-heading-font-family);
+            }
+        }
+    }
+}

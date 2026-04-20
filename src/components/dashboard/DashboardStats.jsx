@@ -1,7 +1,8 @@
 import React from 'react'
-import { FiDollarSign, FiUsers, FiBook, FiFileText, FiAward, FiCheckCircle } from 'react-icons/fi'
+import { FiDollarSign, FiUsers, FiBook, FiFileText } from 'react-icons/fi'
+import { formatShortCurrency } from '@/utils/formatCurrency'
 
-const StatCard = ({ title, value, icon, color }) => (
+const StatCard = ({ title, value, icon, color, isCurrency }) => (
     <div className="col-xxl-3 col-md-6">
         <div className="card stretch stretch-full short-info-card">
             <div className="card-body">
@@ -11,8 +12,8 @@ const StatCard = ({ title, value, icon, color }) => (
                             {icon}
                         </div>
                         <div>
-                            <div className="fs-4 fw-bold text-dark">
-                                <span className="counter">{value}</span>
+                            <div className="fs-4 fw-bold text-dark text-truncate" title={typeof value === 'number' && isCurrency ? undefined : String(value)}>
+                                <span className="counter">{isCurrency ? formatShortCurrency(value) : value}</span>
                             </div>
                             <h3 className="fs-13 fw-semibold text-truncate-1-line">{title}</h3>
                         </div>
@@ -31,6 +32,7 @@ const DashboardStats = ({ stats }) => {
                 value={stats.revenue}
                 icon={<FiDollarSign size={24} />}
                 color="success"
+                isCurrency
             />
             <StatCard
                 title="Total Invoice"

@@ -43,18 +43,11 @@ export async function GET(request) {
         const invoiceDoc = invoicesSnapshot.docs[0]
         const invoiceData = invoiceDoc.data()
 
-        if (!invoiceData.midtransToken) {
-            return NextResponse.json(
-                { success: false, error: 'Payment token not found' },
-                { status: 404 }
-            )
-        }
-
-        return NextResponse.json({
-            success: true,
-            token: invoiceData.midtransToken,
-            redirectUrl: invoiceData.midtransRedirectUrl,
-        })
+        // Metode pembayaran (gateway) tidak dikonfigurasi
+        return NextResponse.json(
+            { success: false, error: 'Metode pembayaran tidak dikonfigurasi. Hubungi admin untuk pembayaran.' },
+            { status: 400 }
+        )
     } catch (error) {
         console.error('Error fetching payment token:', error)
         return NextResponse.json(

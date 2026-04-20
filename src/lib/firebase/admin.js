@@ -27,11 +27,14 @@ function getServiceAccountFromEnv() {
 
 function findServiceAccountJsonPath() {
     const cwd = process.cwd();
-    if (process.env.GOOGLE_APPLICATION_CREDENTIALS && existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS)) {
-        return process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    const googleAppCreds = process.env.GOOGLE_APPLICATION_CREDENTIALS;
+    // `|| ''` memutus analisis Turbopack TP1004 (existsSync + path dari process.env)
+    if (googleAppCreds && existsSync(googleAppCreds || "")) {
+        return googleAppCreds;
     }
-    if (process.env.FIREBASE_SERVICE_ACCOUNT_PATH && existsSync(process.env.FIREBASE_SERVICE_ACCOUNT_PATH)) {
-        return process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    const firebasePath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
+    if (firebasePath && existsSync(firebasePath || "")) {
+        return firebasePath;
     }
     const exact = join(cwd, "serviceAccountKey.json");
     if (existsSync(exact)) return exact;

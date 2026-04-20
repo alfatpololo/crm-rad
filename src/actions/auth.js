@@ -24,7 +24,6 @@ export async function createSession(idToken) {
         // 5 days
         const expiresIn = 60 * 60 * 24 * 5 * 1000;
 
-        console.log('🔄 Creating session cookie...');
         const sessionCookie = await adminAuth.createSessionCookie(idToken, { expiresIn });
 
         const cookieStore = cookies();
@@ -36,7 +35,6 @@ export async function createSession(idToken) {
             sameSite: 'lax',
         });
 
-        console.log('✅ Session created successfully');
         return { success: true };
     } catch (error) {
         console.error('❌ Create Session Error:', error);
@@ -53,7 +51,6 @@ export async function removeSession() {
     try {
         const cookieStore = cookies();
         cookieStore.delete('session');
-        console.log('✅ Session removed');
     } catch (error) {
         console.error('❌ Error removing session:', error);
     }
@@ -65,7 +62,6 @@ export async function getSessionUser() {
         const sessionCookie = cookieStore.get('session')?.value;
         
         if (!sessionCookie) {
-            console.warn('⚠️ No session cookie found');
             return null;
         }
 
@@ -76,7 +72,6 @@ export async function getSessionUser() {
 
         try {
             const decodedClaims = await adminAuth.verifySessionCookie(sessionCookie, true);
-            console.log('✅ Session user verified:', decodedClaims.email);
             return decodedClaims;
         } catch (error) {
             console.error('❌ Error verifying session cookie:', error.message);

@@ -1,0 +1,189 @@
+@use '../utils' as *;
+
+/*=============================
+    13. Mentor
+===============================*/
+.mentors {
+    &__item {
+        border: 1px solid #D7DCE3;
+        box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.06);
+        border-radius: 10px;
+        background: var(--tg-common-color-white);
+        max-width: 270px;
+        margin: 0 auto 30px;
+    }
+    &__img {
+        text-align: center;
+        margin: 38px 50px 0;
+        position: relative;
+        & a {
+            display: block;
+        }
+        & img {
+            @include border-radius(50%);
+            box-shadow: 0px 0px 20px rgba(0, 0, 0, 0.06);
+        }
+    }
+    &__social {
+        position: absolute;
+        top: 50%;
+        @include transform(translateY(-50%));
+        right: -15px;
+        z-index: 2;
+        &:hover {
+            & .social-list {
+                opacity: 1;
+                visibility: visible;
+                & li {
+                    opacity: 1;
+                    visibility: visible;
+                    &:not(:last-child) {
+                        @include transform(translateX(0));
+                    }
+                }
+            }
+        }
+        & .share {
+            background: var(--tg-theme-primary);
+            width: 40px;
+            height: 40px;
+            font-size: 19px;
+            @include flexbox();
+            align-items: center;
+            justify-content: center;
+            @include border-radius(50%);
+            color: var(--tg-common-color-white);
+            cursor: pointer;
+            @include transition(.3s);
+        }
+        & .social-list {
+            position: absolute;
+            @include flexbox();
+            right: calc(100% + 5px);
+            top: 0;
+            gap: 5px;
+            opacity: 0;
+            visibility: hidden;
+            & li {
+                @include transition(.3s);
+                opacity: 0;
+                visibility: hidden;
+                &:not(:last-child) {
+                    @include transform(translateX(10px));
+                }
+                &:nth-child(4) {
+                    -webkit-transition-delay: 100ms;
+                    -moz-transition-delay: 100ms;
+                    -ms-transition-delay: 100ms;
+                    -o-transition-delay: 100ms;
+                    transition-delay: 100ms;
+                }
+                &:nth-child(3) {
+                    -webkit-transition-delay: 150ms;
+                    -moz-transition-delay: 150ms;
+                    -ms-transition-delay: 150ms;
+                    -o-transition-delay: 150ms;
+                    transition-delay: 150ms;
+                }
+                &:nth-child(2) {
+                    -webkit-transition-delay: 200ms;
+                    -moz-transition-delay: 200ms;
+                    -ms-transition-delay: 200ms;
+                    -o-transition-delay: 200ms;
+                    transition-delay: 200ms;
+                }
+                &:nth-child(1) {
+                    -webkit-transition-delay: 250ms;
+                    -moz-transition-delay: 250ms;
+                    -ms-transition-delay: 250ms;
+                    -o-transition-delay: 250ms;
+                    transition-delay: 250ms;
+                }
+                & a {
+                    background: var(--tg-theme-primary);
+                    width: 40px;
+                    height: 40px;
+                    font-size: 14px;
+                    @include flexbox();
+                    align-items: center;
+                    justify-content: center;
+                    @include border-radius(50%);
+                    color: var(--tg-common-color-white);
+                    cursor: pointer;
+                    @include transition(.3s);
+                    &:hover {
+                        color: var(--tg-theme-primary);
+                        background: var(--tg-common-color-white);
+                    }
+                }
+            }
+        }
+    }
+    &__content {
+        & .name {
+            font-size: 22px;
+            font-weight: var(--tg-fw-medium);
+            margin: 0 0 8px;
+            & a:hover {
+                color: var(--tg-theme-primary);
+            }
+        }
+        & .designation {
+            display: block;
+            font-size: 15px;
+            line-height: 1;
+        }
+        &-top {
+            text-align: center;
+            padding: 15px 20px 20px;
+        }
+        &-bottom {
+            padding: 21px 28px;
+            border-top: 1px solid #D7DCE3;
+            & ul {
+                @include flexbox();
+                align-items: center;
+                justify-content: space-between;
+                & li {
+                    @include flexbox();
+                    align-items: center;
+                    line-height: 1;
+                    gap: 5px;
+                    &.rating {
+                        & i {
+                            font-size: 15px;
+                            color: #F8BC24;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    &__shapes {
+        & img {
+            position: absolute;
+            z-index: -1;
+            &:nth-child(1) {
+                max-width: 81px;
+                left: 5%;
+                bottom: 22%;
+                @media #{$xxl} {
+                    max-width: 75px;
+                    left: 4%;
+                }
+            }
+            &:nth-child(2) {
+                max-width: 104px;
+                right: 7%;
+                top: 24%;
+                @media #{$xxl} {
+                    max-width: 75px;
+                    right: 4%;
+                }
+                @media #{$xl} {
+                    top: 30%;
+                }
+            }
+        }
+    }
+}

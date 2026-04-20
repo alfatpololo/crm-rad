@@ -547,11 +547,13 @@ export async function getParticipantsForBlast(filter = 'all') {
 
         snapshot.forEach(doc => {
             const data = doc.data();
+            const rawPhone = data.phone ?? data.phoneNumber ?? data.no_telepon ?? data.telepon ?? '';
+            const phone = rawPhone !== null && rawPhone !== undefined ? String(rawPhone).trim() : '';
             participants.push({
                 id: doc.id,
                 name: data.name || data.displayName || 'Unknown',
                 email: data.email || '',
-                phone: data.phone || data.phoneNumber || '',
+                phone: phone || '',
                 enrolledClasses: (data.enrolledClasses || []).length,
                 completedClasses: (data.completedClasses || []).length,
             });
@@ -566,25 +568,77 @@ export async function getParticipantsForBlast(filter = 'all') {
 
 /**
  * Send blast promo to selected participants
+ * @param {{ id: string, phone: string }[]} [selectedPhones] - Daftar { id, phone } dari peserta (untuk WA dipakai langsung)
  */
-export async function sendBlastPromo(participantIds, subject, message, type = 'email') {
+export async function sendBlastPromo(participantIds, subject, message, type = 'email', selectedPhones = null) {
     try {
         const user = await getSessionUser();
         if (!user || user.email !== 'admin@mail.com') {
             return { error: 'Unauthorized' };
         }
 
-        // Get participant emails
-        const participants = [];
-        for (const id of participantIds) {
-            const doc = await adminDb.collection('participants').doc(id).get();
-            if (doc.exists) {
-                const data = doc.data();
-                participants.push({
-                    id: doc.id,
-                    email: data.email,
-                    name: data.name || data.displayName || 'User',
+        let participants = [];
+        if (type === 'whatsapp' && Array.isArray(selectedPhones) && selectedPhones.length > 0) {
+            const { normalizePhone } = await import('@/lib/mekariWa');
+            participants = selectedPhones
+                .map(item => {
+                    const id = item && (item.id ?? item.participantId);
+                    const ph = (item && (item.phone ?? item.phoneNumber ?? '')).toString().trim();
+                    if (!id || !ph) return null;
+                    const normalized = normalizePhone(ph);
+                    return normalized ? { id: String(id), phone: normalized } : null;
+                })
+                .filter(Boolean);
+        } else {
+            const phoneById = {};
+            if (Array.isArray(selectedPhones) && selectedPhones.length > 0) {
+                selectedPhones.forEach(item => {
+                    const id = item && (item.id ?? item.participantId);
+                    const ph = item && (item.phone ?? item.phoneNumber ?? '');
+                    if (id && ph && String(ph).trim()) phoneById[String(id)] = String(ph).trim();
                 });
+            }
+            for (const id of participantIds) {
+                const doc = await adminDb.collection('participants').doc(id).get();
+                const data = doc.exists ? doc.data() : {};
+                let phone = null;
+                if (phoneById[String(id)]) phone = phoneById[String(id)];
+                if (!phone) {
+                    const raw = data.phone ?? data.phoneNumber ?? data.no_telepon ?? data.telepon ?? null;
+                    if (raw != null && raw !== '') phone = String(raw).trim();
+                }
+                participants.push({
+                    id: doc.exists ? doc.id : id,
+                    email: data.email || '',
+                    name: data.name || data.displayName || 'User',
+                    phone,
+                });
+            }
+        }
+
+        let sentCount = 0;
+        let firstError = null;
+        if (type === 'whatsapp') {
+            const { sendMekariWhatsApp } = await import('@/lib/mekariWa');
+            const text = (subject ? `*${subject}*\n\n` : '') + message;
+            for (const p of participants) {
+                const to = p.phone || p.normalized;
+                if (!to) continue;
+                const res = await sendMekariWhatsApp(to, text);
+                if (res.success) {
+                    sentCount++;
+                } else if (!firstError) {
+                    firstError = res.error || 'Unknown error';
+                }
+            }
+        } else {
+            const { sendEmail } = await import('@/lib/resendEmail');
+            const html = `<div style="font-family: Arial, sans-serif; line-height: 1.6;">${subject ? `<h2>${subject}</h2>` : ''}<div>${message.replace(/\n/g, '<br>')}</div><p style="color:#888; font-size:12px; margin-top:24px;">— CRM</p></div>`;
+            for (const p of participants) {
+                if (p.email) {
+                    const res = await sendEmail({ to: p.email, subject: subject || 'Promo', html });
+                    if (res.success) sentCount++;
+                }
             }
         }
 
@@ -595,20 +649,31 @@ export async function sendBlastPromo(participantIds, subject, message, type = 'e
             type,
             participantIds,
             participantCount: participants.length,
+            sentCount,
             sentBy: user.email,
             sentAt: new Date(),
-            status: 'sent', // sent, failed, pending
+            status: 'sent',
         });
 
-        // In a real implementation, you would send emails/WhatsApp here
-        // For now, we'll just log it
-        console.log(`Blast promo sent to ${participants.length} participants`);
-
         revalidatePath('/customers/blast');
-        return { 
-            success: true, 
-            sentCount: participants.length,
-            message: `Promo berhasil dikirim ke ${participants.length} peserta`
+        const hasAnyPhone = participants.some(p => (p?.phone ?? p?.phoneNumber ?? '') && String(p.phone ?? p.phoneNumber ?? '').trim());
+        let waMessage;
+        if (type === 'whatsapp' && sentCount === 0 && firstError) {
+            waMessage = `Promo WA dikirim ke 0 peserta. API WA gagal: ${firstError}`;
+        } else {
+            waMessage = sentCount === 0 && !hasAnyPhone
+                ? 'Promo WA dikirim ke 0 peserta. Tidak ada nomor yang dikirim.'
+                : sentCount === 0 && hasAnyPhone
+                    ? 'Promo WA dikirim ke 0 peserta. Semua nomor tidak valid (min. 10 digit, format 08xxx atau 62xxx).'
+                    : sentCount < participants.length
+                        ? `Promo WA dikirim ke ${sentCount} peserta (beberapa gagal).`
+                        : `Promo WA dikirim ke ${sentCount} peserta.`;
+        }
+        return {
+            success: true,
+            sentCount,
+            message: type === 'whatsapp' ? waMessage : `Promo email dikirim ke ${sentCount} peserta${participants.some(p => p.email) && sentCount < participants.length ? ' (periksa RESEND_API_KEY / inbox/spam)' : ''}`,
+            ...(type === 'whatsapp' && firstError != null && { apiError: firstError }),
         };
     } catch (error) {
         console.error('Error sending blast promo:', error);
