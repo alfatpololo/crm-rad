@@ -10,7 +10,7 @@ import { createSession, createUserDocument } from '@/actions/auth'
 const LoginForm = ({ registerPath, resetPath }) => {
     const router = useRouter()
     const searchParams = useSearchParams()
-    const redirectTo = searchParams.get('redirect') || '/dashboard'
+    const redirectParam = searchParams.get('redirect')
     const [email, setEmail] = useState('')
     const [password, setPassword] = useState('')
     const [loading, setLoading] = useState(false)
@@ -51,7 +51,8 @@ const LoginForm = ({ registerPath, resetPath }) => {
                 throw new Error('Session creation failed. ' + result.error)
             }
 
-            router.push(redirectTo)
+            const defaultDest = user.email === 'admin@mail.com' ? '/dashboard' : '/profile'
+            router.push(redirectParam || defaultDest)
         } catch (error) {
             console.error('❌ Login error:', error)
             Swal.fire({
@@ -96,7 +97,8 @@ const LoginForm = ({ registerPath, resetPath }) => {
                 throw new Error('Session creation failed. ' + sessionResult.error)
             }
 
-            router.push(redirectTo)
+            const defaultDest = user.email === 'admin@mail.com' ? '/dashboard' : '/profile'
+            router.push(redirectParam || defaultDest)
         } catch (error) {
             console.error('Google sign in error:', error)
             Swal.fire({

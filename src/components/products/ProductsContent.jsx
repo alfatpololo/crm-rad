@@ -58,7 +58,7 @@ const ProductsContent = () => {
         <div className="col-12">
             <div className="card border-0 shadow-sm mb-4">
                 <div className="card-header bg-transparent border-bottom pb-3">
-                    <h5 className="card-title mb-0 fw-bold">Merchandise / Produk Fisik</h5>
+                    <h5 className="card-title mb-0 fw-bold">Merch</h5>
                 </div>
                 <div className="card-body p-4">
                     {products.length === 0 ? (

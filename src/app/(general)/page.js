@@ -7,8 +7,9 @@ import EduvaltPublicStylesLinks from '@/components/landing/EduvaltPublicStylesLi
 export const dynamic = 'force-dynamic'
 
 export const metadata = {
-  title: 'Home One - PT. RAD Indonesia',
-  description: 'Eduvalt Home One style landing page for CRM RAD.',
+  title: 'Beranda | PT. RAD Indonesia',
+  description:
+    'LMS PT. RAD Indonesia — program pelatihan & sertifikasi (CMA, CBV, dan lainnya). Informasi resmi gelombang dan silabus mengacu pada radindonesia.com.',
 }
 
 export default async function HomePage() {

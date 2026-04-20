@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import NavigationProvider from "@/contentApi/navigationProvider";
 import SettingSideBarProvider from "@/contentApi/settingSideBarProvider";
 import { AuthProvider } from "@/context/AuthProvider";
+import { RAD_BRAND_TITLE } from "@/lib/radLandingContent";
 
 const ThemeCustomizer = dynamic(
   () => import("@/components/shared/ThemeCustomizer"),
@@ -11,8 +12,8 @@ const ThemeCustomizer = dynamic(
 );
 
 export const metadata = {
-  title: "PT. RAD Indonesia CRM",
-  description: "PT. RAD Indonesia - Customer Relationship Management System",
+  title: `${RAD_BRAND_TITLE} — CRM`,
+  description: `${RAD_BRAND_TITLE} — sistem manajemen pelanggan & LMS internal.`,
 };
 
 export default function RootLayout({ children }) {

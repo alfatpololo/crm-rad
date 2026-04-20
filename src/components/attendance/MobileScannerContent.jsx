@@ -90,7 +90,7 @@ const MobileScannerContent = () => {
             console.error('File scan error:', error)
             Swal.fire({
                 icon: 'error',
-                title: '❌ Error',
+                title: 'Error',
                 text: 'Gagal membaca QR Code dari gambar. Pastikan gambar mengandung QR Code yang valid.',
                 confirmButtonText: 'OK'
             })
@@ -120,13 +120,13 @@ const MobileScannerContent = () => {
                 // Show success modal
                 await Swal.fire({
                     icon: 'success',
-                    title: '✅ Berhasil!',
+                    title: 'Berhasil',
                     html: `
                         <div style="text-align: left; padding: 10px;">
                             <p style="margin: 5px 0;"><strong>Nama:</strong> ${result.data.participantName}</p>
                             <p style="margin: 5px 0;"><strong>Kelas:</strong> ${result.data.className}</p>
                             <p style="margin: 5px 0;"><strong>Waktu:</strong> ${new Date().toLocaleString('id-ID')}</p>
-                            ${result.data.alreadyAttended ? '<p style="color: orange; margin-top: 10px;">⚠️ Sudah absen sebelumnya</p>' : ''}
+                            ${result.data.alreadyAttended ? '<p style="color: #b45309; margin-top: 10px;">Sudah absen sebelumnya.</p>' : ''}
                         </div>
                     `,
                     confirmButtonText: 'OK',
@@ -137,7 +137,7 @@ const MobileScannerContent = () => {
                 // Error feedback
                 await Swal.fire({
                     icon: 'error',
-                    title: '❌ Gagal',
+                    title: 'Gagal',
                     text: result.error || 'QR Code tidak valid',
                     confirmButtonText: 'OK'
                 })
@@ -146,7 +146,7 @@ const MobileScannerContent = () => {
             console.error('Process error:', error)
             await Swal.fire({
                 icon: 'error',
-                title: '❌ Error',
+                title: 'Error',
                 text: 'Terjadi kesalahan saat memproses QR Code',
                 confirmButtonText: 'OK'
             })
@@ -181,7 +181,7 @@ const MobileScannerContent = () => {
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
                     <div>
                         <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 'bold', color: '#333' }}>
-                            📱 Scanner Kehadiran
+                            Scanner kehadiran
                         </h1>
                         <p style={{ margin: '5px 0 0 0', fontSize: '12px', color: '#666' }}>
                             Scan QR Code peserta untuk absensi
@@ -219,7 +219,7 @@ const MobileScannerContent = () => {
                             fontSize: '14px'
                         }}
                     >
-                        📷 Scan Kamera
+                        Scan kamera
                     </button>
                     <button
                         onClick={() => setScanMode('upload')}
@@ -235,7 +235,7 @@ const MobileScannerContent = () => {
                             fontSize: '14px'
                         }}
                     >
-                        📤 Upload Gambar
+                        Upload gambar
                     </button>
                 </div>
             </div>
@@ -282,7 +282,18 @@ const MobileScannerContent = () => {
                                 textAlign: 'center',
                                 background: '#f8f9ff'
                             }}>
-                                <div style={{ fontSize: '48px', marginBottom: '15px' }}>📤</div>
+                                <div
+                                    style={{
+                                        marginBottom: '15px',
+                                        fontSize: '14px',
+                                        fontWeight: 700,
+                                        letterSpacing: '0.04em',
+                                        color: '#667eea',
+                                        textTransform: 'uppercase',
+                                    }}
+                                >
+                                    Upload
+                                </div>
                                 <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>Upload QR Code</h3>
                                 <p style={{ color: '#666', fontSize: '14px', marginBottom: '20px' }}>
                                     Pilih gambar QR Code dari galeri
@@ -308,7 +319,7 @@ const MobileScannerContent = () => {
                                         opacity: isProcessing ? 0.6 : 1
                                     }}
                                 >
-                                    {isProcessing ? 'Memproses...' : '📁 Pilih Gambar'}
+                                    {isProcessing ? 'Memproses...' : 'Pilih gambar'}
                                 </label>
                                 <div id="file-qr-reader" style={{ display: 'none' }}></div>
                             </div>
@@ -340,7 +351,7 @@ const MobileScannerContent = () => {
                         color: '#004085',
                         border: '1px solid #b8daff'
                     }}>
-                        <strong>📋 Cara Penggunaan:</strong>
+                        <strong>Cara penggunaan</strong>
                         {scanMode === 'camera' ? (
                             <ol style={{ margin: '10px 0 0 0', paddingLeft: '20px' }}>
                                 <li>Arahkan kamera ke QR Code peserta</li>
@@ -370,7 +381,7 @@ const MobileScannerContent = () => {
                         boxShadow: '0 5px 20px rgba(0,0,0,0.1)'
                     }}>
                         <h3 style={{ margin: '0 0 15px 0', fontSize: '16px', color: '#333' }}>
-                            ✅ Scan Terakhir
+                            Scan terakhir
                         </h3>
                         {recentScans.map((scan, index) => (
                             <div key={index} style={{
@@ -399,7 +410,7 @@ const MobileScannerContent = () => {
                 fontSize: '12px',
                 color: '#666'
             }}>
-                <p style={{ margin: 0 }}>🔒 Mode Admin Scanner • {new Date().toLocaleDateString('id-ID')}</p>
+                <p style={{ margin: 0 }}>Mode admin scanner · {new Date().toLocaleDateString('id-ID')}</p>
             </div>
         </div>
     )

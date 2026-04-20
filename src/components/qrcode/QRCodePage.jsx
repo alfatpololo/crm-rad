@@ -179,18 +179,19 @@ const QRCodePage = ({ serviceId }) => {
                                                 className="btn btn-primary btn-lg px-5"
                                                 onClick={handleDownload}
                                             >
-                                                💾 Download QR Code
+                                                <i className="fas fa-download me-2" aria-hidden />
+                                                Download QR code
                                             </button>
                                         </div>
                                         <div className="alert alert-info mb-0">
                                             <small className="d-block mb-2">
-                                                <strong>📋 Cara Penggunaan:</strong>
+                                                <strong>Cara penggunaan</strong>
                                             </small>
                                             <small className="d-block text-start">
                                                 1. <strong>Download</strong> QR Code dengan klik tombol di atas<br />
                                                 2. Atau <strong>screenshot</strong> langsung dari halaman ini<br />
                                                 3. <strong>Tunjukkan</strong> QR Code ke panitia saat check-in<br />
-                                                4. Kehadiran Anda akan <strong>tercatat otomatis</strong> ✓
+                                                4. Kehadiran Anda akan <strong>tercatat otomatis</strong>
                                             </small>
                                         </div>
                                     </>

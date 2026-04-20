@@ -50,7 +50,7 @@ export const chatMessageData = [
         time: "10:45 PM",
         isReplay: false,
         messages: [
-            "Thanks. I'm worried😳 it won't arrive in time⌚ for my daughter's birthday🎂 party🎉 this weekend.",
+            "Thanks. I'm worried it won't arrive in time for my daughter's birthday party this weekend.",
             "Order tracking number is: <a href='#'>#698745</a>"
         ]
     },
@@ -91,7 +91,7 @@ export const chatMessageData = [
         time: "10:50 PM",
         isReplay: false,
         messages: [
-            "The birthday🎂 ceremony preparation almost completed",
+            "The birthday ceremony preparation almost completed",
             "Thank your so much.....!!!!"
         ]
     },

@@ -4,14 +4,15 @@ import React, { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import Swal from 'sweetalert2'
+import { FiCheckCircle, FiClock, FiDollarSign } from 'react-icons/fi'
 import { useAuth } from '@/context/AuthProvider'
 import { getPaymentHistoryForProfile } from '@/actions/payments'
 
 /**
  * Riwayat pembayaran peserta: cicilan berjalan + ringkasan + tabel invoice (Firestore).
- * @param {{ compact?: boolean }} props — compact=true: dipakai di tab Profil (max 10 baris, tanpa judul halaman)
+ * @param {{ compact?: boolean, omitTabPaneWrapper?: boolean }} props — compact=true: dipakai di tab Profil (max 10 baris, tanpa judul halaman). omitTabPaneWrapper: inner saja (parent yang membungkus tab-pane).
  */
-export default function ParticipantPaymentHistoryContent({ compact = false }) {
+export default function ParticipantPaymentHistoryContent({ compact = false, omitTabPaneWrapper = false }) {
     const { user } = useAuth()
     const searchParams = useSearchParams()
     const highlightId = searchParams?.get('id') || null
@@ -205,8 +206,8 @@ export default function ParticipantPaymentHistoryContent({ compact = false }) {
                                     <p className="text-muted mb-1 small">Total nominal (invoice)</p>
                                     <h5 className="fw-bold mb-0">Rp {stats.total.toLocaleString('id-ID')}</h5>
                                 </div>
-                                <div className="bg-soft-primary p-3 rounded-circle">
-                                    <span style={{ fontSize: '24px' }}>💰</span>
+                                <div className="bg-soft-primary p-3 rounded-circle text-primary d-flex align-items-center justify-content-center">
+                                    <FiDollarSign size={22} aria-hidden />
                                 </div>
                             </div>
                         </div>
@@ -220,8 +221,8 @@ export default function ParticipantPaymentHistoryContent({ compact = false }) {
                                     <p className="text-muted mb-1 small">Berhasil</p>
                                     <h5 className="fw-bold mb-0">{stats.completed} Transaksi</h5>
                                 </div>
-                                <div className="bg-soft-success p-3 rounded-circle">
-                                    <span style={{ fontSize: '24px' }}>✅</span>
+                                <div className="bg-soft-success p-3 rounded-circle text-success d-flex align-items-center justify-content-center">
+                                    <FiCheckCircle size={22} aria-hidden />
                                 </div>
                             </div>
                         </div>
@@ -235,8 +236,8 @@ export default function ParticipantPaymentHistoryContent({ compact = false }) {
                                     <p className="text-muted mb-1 small">Pending</p>
                                     <h5 className="fw-bold mb-0">{stats.pending} Transaksi</h5>
                                 </div>
-                                <div className="bg-soft-warning p-3 rounded-circle">
-                                    <span style={{ fontSize: '24px' }}>⏳</span>
+                                <div className="bg-soft-warning p-3 rounded-circle text-warning d-flex align-items-center justify-content-center">
+                                    <FiClock size={22} aria-hidden />
                                 </div>
                             </div>
                         </div>
@@ -323,12 +324,13 @@ export default function ParticipantPaymentHistoryContent({ compact = false }) {
                         </div>
                     ) : (
                         <div className="text-center py-5 px-3">
-                            <div style={{ fontSize: '48px' }} className="mb-3">
-                                💳
+                            <div className="d-inline-flex align-items-center justify-content-center rounded-circle bg-light border mb-3 p-3 text-primary">
+                                <FiDollarSign size={28} aria-hidden />
                             </div>
                             <h6 className="fw-bold mb-2">Belum ada riwayat pembayaran</h6>
                             <p className="text-muted small mb-3">Invoice dari pembelian kelas/produk akan muncul di sini.</p>
                             <Link href="/services" className="btn btn-primary btn-sm">
+                                <i className="fas fa-compass me-1" aria-hidden />
                                 Jelajahi kelas
                             </Link>
                         </div>
@@ -337,6 +339,10 @@ export default function ParticipantPaymentHistoryContent({ compact = false }) {
             </div>
         </>
     )
+
+    if (compact && omitTabPaneWrapper) {
+        return inner
+    }
 
     if (compact) {
         return <div className="tab-pane fade p-4" id="billingTab" role="tabpanel">{inner}</div>

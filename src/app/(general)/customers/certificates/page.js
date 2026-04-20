@@ -19,7 +19,9 @@ const AdminCertificatesPage = async () => {
         <>
             <PageHeader>
                 <div className="d-flex align-items-center gap-2 page-header-right-items-wrapper">
-                    <span style={{fontSize: '24px'}}>📜</span>
+                    <span className="text-primary" style={{ fontSize: '22px' }}>
+                        <i className="fas fa-certificate" aria-hidden />
+                    </span>
                     <h4 className="mb-0">Manajemen Sertifikat</h4>
                 </div>
             </PageHeader>

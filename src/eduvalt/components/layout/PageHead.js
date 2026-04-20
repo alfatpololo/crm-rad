@@ -1,8 +1,10 @@
 'use client'
 
 import { useEffect } from 'react'
+import { RAD_BRAND_TITLE } from '@/lib/radLandingContent'
 
-const DEFAULT_TITLE = 'Eduvalt - Online Courses & Education Nextjs Template'
+/** Fallback bila route tidak mengirim `headTitle` ke Layout. */
+const DEFAULT_TITLE = `${RAD_BRAND_TITLE} — LMS`
 
 /**
  * Di App Router, hindari next/head — set judul dokumen di client.

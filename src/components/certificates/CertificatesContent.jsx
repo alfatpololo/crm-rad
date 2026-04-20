@@ -29,7 +29,12 @@ const CertificatesContent = ({ initialCertificates = [] }) => {
     const getStatusBadge = (status) => {
         switch (status) {
             case 'issued':
-                return <span className="badge bg-success">✓ Issued</span>
+                return (
+                    <span className="badge bg-success">
+                        <i className="fas fa-check me-1" aria-hidden />
+                        Issued
+                    </span>
+                )
             case 'published':
                 return <span className="badge bg-soft-success text-success">Published</span>
             case 'completed':
@@ -78,7 +83,9 @@ const CertificatesContent = ({ initialCertificates = [] }) => {
             <div className="col-lg-12">
                 <div className="card">
                     <div className="card-body text-center py-5">
-                        <div style={{fontSize: '48px'}} className="mb-3">📜</div>
+                        <div className="mb-3 text-primary" style={{ fontSize: '2.5rem' }}>
+                            <i className="fas fa-certificate" aria-hidden />
+                        </div>
                         <h6 className="fw-bold mb-2">Belum Ada Sertifikat</h6>
                         <p className="text-muted small">Sertifikat akan muncul setelah Anda menyelesaikan kelas dan admin meng-issue sertifikat</p>
                     </div>
@@ -134,14 +141,16 @@ const CertificatesContent = ({ initialCertificates = [] }) => {
                                                             onClick={() => handlePreviewPDF(cert)}
                                                             title="Preview"
                                                         >
-                                                            👁️ Lihat
+                                                            <i className="fas fa-eye me-1" aria-hidden />
+                                                            Lihat
                                                         </button>
                                                         <button
                                                             className="btn btn-sm btn-success"
                                                             onClick={() => handleDownloadPDF(cert)}
                                                             title="Download"
                                                         >
-                                                            📥 Download
+                                                            <i className="fas fa-download me-1" aria-hidden />
+                                                            Download
                                                         </button>
                                                     </>
                                                 )}

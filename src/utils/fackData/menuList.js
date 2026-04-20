@@ -145,9 +145,9 @@ export const adminMenuList = [
 export const userMenuList = [
     {
         id: 1,
-        name: "Dasbor",
-        path: "/dashboard",
-        icon: 'feather-airplay',
+        name: "Profil",
+        path: "/profile",
+        icon: 'feather-user',
         dropdownMenu: []
     },
     {
@@ -159,7 +159,7 @@ export const userMenuList = [
     },
     {
         id: 22,
-        name: "Merch / Produk",
+        name: "Merch",
         path: "/products",
         icon: 'feather-shopping-bag',
         dropdownMenu: []
@@ -199,13 +199,6 @@ export const userMenuList = [
         icon: 'feather-file-text',
         dropdownMenu: []
     },
-    {
-        id: 6,
-        name: "Profil",
-        path: "/profile",
-        icon: 'feather-user',
-        dropdownMenu: []
-    }
 ];
 
 

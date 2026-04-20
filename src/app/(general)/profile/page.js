@@ -18,19 +18,31 @@ const page = () => {
     )
   }
 
-  return (
-    <>
-      <PageHeader>
-        <div className="d-flex align-items-center gap-2 page-header-right-items-wrapper">
-          {/* Header actions can be added here if needed */}
+  if (role === 'admin') {
+    return (
+      <>
+        <PageHeader>
+          <div className="d-flex align-items-center gap-2 page-header-right-items-wrapper">
+            {/* Header actions can be added here if needed */}
+          </div>
+        </PageHeader>
+        <div className="main-content">
+          <div className="row">
+            <AdminProfileContent />
+          </div>
         </div>
-      </PageHeader>
-      <div className='main-content'>
-        <div className='row'>
-          {role === 'admin' ? <AdminProfileContent /> : <ProfileContent />}
+      </>
+    )
+  }
+
+  return (
+    <section className="courses-details-area section-pt-40 section-pb-120 participant-profile-pad-for-bottom-nav">
+      <div className="container">
+        <div className="row g-4">
+          <ProfileContent variant="eduvalt" />
         </div>
       </div>
-    </>
+    </section>
   )
 }
 

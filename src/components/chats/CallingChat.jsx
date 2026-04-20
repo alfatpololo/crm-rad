@@ -1,5 +1,5 @@
 import React from 'react'
-import { FiAlertTriangle, FiEyeOff, FiTrash2 } from 'react-icons/fi'
+import { FiAlertTriangle, FiEyeOff, FiSmile, FiTrash2 } from 'react-icons/fi'
 import Dropdown from '@/components/shared/Dropdown'
 import { chatMessageData } from '@/utils/fackData/chatMessageData'
 import { FileMessage } from './ChatMessage'
@@ -73,8 +73,8 @@ const CallingChat = () => {
             <div className="px-3 py-2 fs-16 fw-bold">
                 <div className='position-relative  '>
                     <input className="form-control border-0 emoji-picker" placeholder="Type your message here..." />
-                    <div className='position-absolute emoji-clicker emoji fs-18 c-pointer' onClick={toggleEmojiPicker}>
-                        😊
+                    <div className='position-absolute emoji-clicker emoji fs-18 c-pointer' onClick={toggleEmojiPicker} aria-label="Emoji">
+                        <FiSmile size={18} strokeWidth={1.5} />
                     </div>
                     {showEmojiPicker && <div className='emoji' ref={emojiPickerRefs}> <EmojiPicker onEmojiClick={(e) => setEmoji([...emoji, e.emoji])} className='position-absolute emoji-picker' /> </div>}
                 </div>

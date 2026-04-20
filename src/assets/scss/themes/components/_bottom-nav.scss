@@ -84,4 +84,9 @@ $bottom-nav-inactive: #6b7885;
   .layout-has-bottom-nav .nxl-container .nxl-content {
     padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom, 0px) + 16px);
   }
+
+  /* Profil peserta di shell Eduvalt (tanpa nxl-content) */
+  .participant-profile-pad-for-bottom-nav {
+    padding-bottom: calc(#{$bottom-nav-height} + env(safe-area-inset-bottom, 0px) + 24px);
+  }
 }

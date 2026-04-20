@@ -67,7 +67,10 @@ const UserAttendanceContent = () => {
                         <div className="card border-0 bg-success text-white">
                             <div className="card-body p-3">
                                 <h3 className="mb-0">{attendedClasses.length}</h3>
-                                <small>✓ Sudah Hadir</small>
+                                <small>
+                                    <i className="fas fa-check me-1" aria-hidden />
+                                    Sudah hadir
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -75,7 +78,10 @@ const UserAttendanceContent = () => {
                         <div className="card border-0 bg-warning text-white">
                             <div className="card-body p-3">
                                 <h3 className="mb-0">{notAttendedClasses.length}</h3>
-                                <small>⏳ Belum Hadir</small>
+                                <small>
+                                    <i className="far fa-clock me-1" aria-hidden />
+                                    Belum hadir
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -83,7 +89,10 @@ const UserAttendanceContent = () => {
                         <div className="card border-0 bg-primary text-white">
                             <div className="card-body p-3">
                                 <h3 className="mb-0">{enrolledClasses.length}</h3>
-                                <small>📚 Total Kelas</small>
+                                <small>
+                                    <i className="fas fa-graduation-cap me-1" aria-hidden />
+                                    Total kelas
+                                </small>
                             </div>
                         </div>
                     </div>
@@ -91,7 +100,10 @@ const UserAttendanceContent = () => {
 
                 {/* Attended Classes */}
                 <div className="mb-4">
-                    <h5 className="fw-bold mb-3">✓ Sudah Hadir ({attendedClasses.length})</h5>
+                    <h5 className="fw-bold mb-3">
+                        <i className="fas fa-check text-success me-2" aria-hidden />
+                        Sudah hadir ({attendedClasses.length})
+                    </h5>
                     {attendedClasses.length > 0 ? (
                         <div className="table-responsive">
                             <table className="table table-hover">
@@ -122,7 +134,10 @@ const UserAttendanceContent = () => {
                                                     </div>
                                                 </td>
                                                 <td>
-                                                    <span className="badge bg-success">✓ Hadir</span>
+                                                    <span className="badge bg-success">
+                                                        <i className="fas fa-check me-1" aria-hidden />
+                                                        Hadir
+                                                    </span>
                                                 </td>
                                                 <td>
                                                     <Link 
@@ -147,7 +162,10 @@ const UserAttendanceContent = () => {
 
                 {/* Not Attended Classes */}
                 <div>
-                    <h5 className="fw-bold mb-3">⏳ Belum Hadir ({notAttendedClasses.length})</h5>
+                    <h5 className="fw-bold mb-3">
+                        <i className="far fa-clock text-warning me-2" aria-hidden />
+                        Belum hadir ({notAttendedClasses.length})
+                    </h5>
                     {notAttendedClasses.length > 0 ? (
                         <div className="table-responsive">
                             <table className="table table-hover">
@@ -176,7 +194,10 @@ const UserAttendanceContent = () => {
                                                 </div>
                                             </td>
                                             <td>
-                                                <span className="badge bg-warning">⏳ Belum Hadir</span>
+                                                <span className="badge bg-warning">
+                                                    <i className="far fa-clock me-1" aria-hidden />
+                                                    Belum hadir
+                                                </span>
                                             </td>
                                             <td>
                                                 <div className="d-flex gap-2">
@@ -185,7 +206,8 @@ const UserAttendanceContent = () => {
                                                         className="btn btn-sm btn-success"
                                                         title="Tampilkan QR Code"
                                                     >
-                                                        📱 QR Code
+                                                        <i className="fas fa-qrcode me-1" aria-hidden />
+                                                        QR code
                                                     </Link>
                                                     <Link 
                                                         href={`/services/view/${cls.id || cls.serviceId}`}
@@ -202,7 +224,10 @@ const UserAttendanceContent = () => {
                         </div>
                     ) : (
                         <div className="alert alert-success">
-                            <small>✓ Semua kelas sudah hadir!</small>
+                            <small>
+                                <i className="fas fa-check-circle me-1" aria-hidden />
+                                Semua kelas sudah hadir.
+                            </small>
                         </div>
                     )}
                 </div>

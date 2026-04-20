@@ -1,4 +1,5 @@
 import Link from "next/link"
+import { RAD_CONTACT, RAD_SITE_URL, RAD_TAGLINE } from "@/lib/radLandingContent"
 
 export default function Banner1() {
     return (
@@ -8,25 +9,41 @@ export default function Banner1() {
                     <div className="row">
                         <div className="col-lg-6">
                             <div className="banner__content">
-                                <img src="/assets/img/banner/bshape_01.png" alt="shape" className="shape alltuchtopdown" />
-                                <img src="/assets/img/banner/bshape_02.png" alt="shape" className="shape" />
-                                <span className="sub-title" data-aos="fade-right" data-aos-delay={200}>100% Satisfaction
-                                    Guarantee</span>
-                                <h3 className="title tg-svg" data-aos="fade-right" data-aos-delay={400}>Learn <span className="position-relative"><span className="svg-icon" id="svg-2" data-svg-icon="assets/img/icons/title_shape.svg" />Skills</span> From Our
-                                    Top Instructors</h3>
-                                <p data-aos="fade-right" data-aos-delay={600}>Borem ipsum dolor sit amet, consectetur
-                                    adipiscing elit. Ut elit tellus, luctus nec ullamcorper mattisBorem ipsum dolor sit amet
-                                    consectetur adipiscing area we followelit.</p>
+                                <img src="/assets/img/banner/bshape_01.png" alt="" className="shape alltuchtopdown" />
+                                <img src="/assets/img/banner/bshape_02.png" alt="" className="shape" />
+                                <span className="sub-title" data-aos="fade-right" data-aos-delay={200}>
+                                    {RAD_TAGLINE.heroSub}
+                                </span>
+                                <h3 className="title tg-svg" data-aos="fade-right" data-aos-delay={400}>
+                                    Mari bergabung dengan pelatihan{" "}
+                                    <span className="position-relative">
+                                        <span className="svg-icon" id="svg-2" data-svg-icon="assets/img/icons/title_shape.svg" />
+                                        CMA
+                                    </span>{" "}
+                                    kami
+                                </h3>
+                                <p data-aos="fade-right" data-aos-delay={600}>
+                                    {RAD_TAGLINE.heroLead}
+                                </p>
                                 <div className="banner__btn-wrap" data-aos="fade-right" data-aos-delay={800}>
                                     <div className="tg-button-wrap">
-                                        <Link href="/courses" className="btn tg-svg"><span className="text">Explore Courses</span>
-                                            <span className="svg-icon" id="svg-1" data-svg-icon="assets/img/icons/btn-arrow.svg" /></Link>
+                                        <Link href="/services" className="btn tg-svg">
+                                            <span className="text">{RAD_TAGLINE.heroCta}</span>
+                                            <span className="svg-icon" id="svg-1" data-svg-icon="assets/img/icons/btn-arrow.svg" />
+                                        </Link>
                                     </div>
-                                    <div className="banner__phone">
+                                    <div className="tg-button-wrap ms-2 d-inline-block align-middle">
+                                        <Link href={RAD_SITE_URL} className="btn btn-border btn-sm" target="_blank" rel="noopener noreferrer">
+                                            {RAD_TAGLINE.heroSecondary}
+                                        </Link>
+                                    </div>
+                                    <div className="banner__phone mt-3 mt-lg-0">
                                         <i className="flaticon-phone-call" />
                                         <div className="number-info">
-                                            <span>Have any Question?</span>
-                                            <h6 className="number"><Link href="tel:993-00-67777">993-00-67777</Link></h6>
+                                            <span>Hubungi kami</span>
+                                            <h6 className="number">
+                                                <Link href={`tel:${RAD_CONTACT.phoneTel}`}>{RAD_CONTACT.phoneDisplay}</Link>
+                                            </h6>
                                         </div>
                                     </div>
                                 </div>
@@ -34,18 +51,18 @@ export default function Banner1() {
                         </div>
                         <div className="col-lg-6">
                             <div className="banner__images">
-                                <img src="/assets/img/banner/banner_img.png" alt="img" className="main-img" />
-                                <img src="/assets/img/banner/bshape_03.png" alt="shape" className="shape" data-aos="fade-down-right" data-aos-delay={1200} />
-                                <img src="/assets/img/banner/bshape_04.png" alt="shape" className="shape" data-aos="fade-right" data-aos-delay={1200} />
-                                <img src="/assets/img/banner/bshape_05.png" alt="shape" className="shape" data-aos="fade-down-left" data-aos-delay={1200} />
+                                <img src="/assets/img/banner/banner_img.png" alt="Pelatihan RAD Indonesia" className="main-img" />
+                                <img src="/assets/img/banner/bshape_03.png" alt="" className="shape" data-aos="fade-down-right" data-aos-delay={1200} />
+                                <img src="/assets/img/banner/bshape_04.png" alt="" className="shape" data-aos="fade-right" data-aos-delay={1200} />
+                                <img src="/assets/img/banner/bshape_05.png" alt="" className="shape" data-aos="fade-down-left" data-aos-delay={1200} />
                                 <div className="banner__fact">
                                     <div className="banner__fact-item">
                                         <div className="icon">
                                             <i className="flaticon-group" />
                                         </div>
                                         <div className="info">
-                                            <span>Total Students</span>
-                                            <h4 className="count">15K</h4>
+                                            <span>Pengalaman</span>
+                                            <h4 className="count">17+</h4>
                                         </div>
                                     </div>
                                     <div className="banner__fact-item">
@@ -53,8 +70,8 @@ export default function Banner1() {
                                             <i className="flaticon-graduation-cap" />
                                         </div>
                                         <div className="info">
-                                            <span>Complete Graduation</span>
-                                            <h4 className="count">34K</h4>
+                                            <span>Mitra ICMA</span>
+                                            <h4 className="count">CMA</h4>
                                         </div>
                                     </div>
                                 </div>

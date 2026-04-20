@@ -37,19 +37,19 @@ export async function sendQRCodeEmail({ to, className, qrCodeBase64, classDetail
 <body>
     <div class="container">
         <div class="header">
-            <h1 style="margin: 0;">🎫 QR Code Kehadiran</h1>
+            <h1 style="margin: 0;">QR code kehadiran</h1>
             <p style="margin: 10px 0 0 0; opacity: 0.9;">Tiket Kehadiran Anda</p>
         </div>
         <div class="content">
             <p>Halo,</p>
             <p>Berikut adalah QR Code untuk kehadiran kelas Anda. Tunjukkan QR Code ini kepada panitia saat check-in.</p>
             <div class="qr-container">
-                <h3 style="margin-top: 0; color: #667eea;">📱 Scan QR Code Ini</h3>
+                <h3 style="margin-top: 0; color: #667eea;">Scan QR code ini</h3>
                 <img src="data:image/png;base64,${qrCodeBase64}" alt="QR Code" class="qr-code" />
                 <p style="margin-bottom: 0; color: #999; font-size: 12px;">QR Code untuk ${className}</p>
             </div>
             <div class="details">
-                <h3 style="margin-top: 0; color: #667eea;">📋 Detail Kelas</h3>
+                <h3 style="margin-top: 0; color: #667eea;">Detail kelas</h3>
                 <div class="details-row">
                     <span class="details-label">Nama Kelas:</span>
                     <span class="details-value">${classDetails.name || className || '-'}</span>
@@ -64,11 +64,11 @@ export async function sendQRCodeEmail({ to, className, qrCodeBase64, classDetail
                 </div>
                 <div class="details-row" style="border-bottom: none;">
                     <span class="details-label">Status:</span>
-                    <span class="details-value" style="color: #4caf50; font-weight: bold;">✓ ${classDetails.status === 'enrolled' ? 'Terdaftar' : (classDetails.status || 'Terdaftar')}</span>
+                    <span class="details-value" style="color: #4caf50; font-weight: bold;">${classDetails.status === 'enrolled' ? 'Terdaftar' : (classDetails.status || 'Terdaftar')}</span>
                 </div>
             </div>
             <div class="instructions">
-                <h3>📝 Cara Penggunaan:</h3>
+                <h3>Cara penggunaan</h3>
                 <ol>
                     <li>Simpan atau screenshot QR Code di atas</li>
                     <li>Bawa QR Code saat datang ke lokasi kelas</li>

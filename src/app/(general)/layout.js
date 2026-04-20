@@ -8,19 +8,21 @@ import BottomNav from "@/components/shared/bottomNav/BottomNav";
 import useBootstrapUtils from "@/hooks/useBootstrapUtils";
 import { useAuth } from "@/context/AuthProvider";
 import LmsMarketingShell from "@/components/landing/LmsMarketingShell";
+import { radPageTitle } from "@/lib/radLandingContent";
 
 function GeneralLayoutInner({ children }) {
     const pathName = usePathname()
     const { role } = useAuth()
+    const isParticipant = role === 'participant'
     // Semua area katalog / Eduvalt public: tanpa Bootstrap JS dashboard (bentrok dengan menu template)
     const skipDashboardBootstrap =
         pathName === '/' ||
         pathName === '/services' ||
         pathName.startsWith('/services/') ||
         pathName === '/products' ||
-        pathName.startsWith('/products/')
+        pathName.startsWith('/products/') ||
+        (isParticipant && pathName === '/profile')
     useBootstrapUtils(skipDashboardBootstrap ? null : pathName)
-    const isParticipant = role === 'participant'
     const isEduvaltProductsDetail = pathName.startsWith('/products/view')
     const isEduvaltServiceDetail = pathName.startsWith('/services/view')
     const isPublicCatalog =
@@ -42,7 +44,22 @@ function GeneralLayoutInner({ children }) {
         return <>{children}</>
     }
     if (isPublicCatalog) {
-        return <LmsMarketingShell>{children}</LmsMarketingShell>
+        const catalogTitle = pathName.startsWith('/products')
+            ? radPageTitle('Produk')
+            : radPageTitle('Kelas')
+        return <LmsMarketingShell headTitle={catalogTitle}>{children}</LmsMarketingShell>
+    }
+
+    /* Profil peserta: tampilan marketing Eduvalt (bukan chrome dashboard), bottom nav tetap */
+    if (isParticipant && pathName === '/profile') {
+        return (
+            <>
+                <LmsMarketingShell breadcrumbTitle="Profil" headTitle={radPageTitle('Profil')}>
+                    {children}
+                </LmsMarketingShell>
+                <BottomNav />
+            </>
+        )
     }
 
     return (

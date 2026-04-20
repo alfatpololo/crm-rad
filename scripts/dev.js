@@ -40,8 +40,10 @@ function healNextState() {
   // Light heal: webpack/swc cache + trace (enough for many "stuck starting" cases)
   rmrf(path.join(nextDir, 'cache'));
   rmrf(path.join(nextDir, 'trace'));
-  // Chunk server kadang stale (mis. Cannot find module './vendor-chunks/@opentelemetry.js')
+  // Chunk server kadang stale (mis. Cannot find module './vendor-chunks/@opentelemetry.js' / 'next.js')
   rmrf(path.join(nextDir, 'server'));
+  // Chunk klien di .next/static harus selaras dengan server; bila hanya server di-drop, HMR bisa 404 main-app.js
+  rmrf(path.join(nextDir, 'static'));
 }
 
 function writeMarker() {

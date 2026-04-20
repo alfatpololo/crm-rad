@@ -1,6 +1,7 @@
 'use client'
 
 import React from 'react'
+import { radPageTitle } from '@/lib/radLandingContent'
 import Layout from '@/eduvalt/components/layout/Layout'
 import Banner1 from '@/eduvalt/components/sections/Banner1'
 import Blog1 from '@/eduvalt/components/sections/Blog1'
@@ -11,7 +12,7 @@ import RadCoursesSection from '@/components/landing/RadCoursesSection'
 
 export default function EduvaltHomePage({ services = [] }) {
   return (
-    <Layout headerStyle={1} footerStyle={1}>
+    <Layout headerStyle={1} footerStyle={1} headTitle={radPageTitle('Beranda')}>
       <Banner1 />
       <Brand1 />
       <RadCoursesSection services={services} />

@@ -15,6 +15,9 @@ export default async function DashboardPage() {
     }
 
     const isAdmin = user.email === 'admin@mail.com'
+    if (!isAdmin) {
+        redirect('/profile')
+    }
 
     return (
         <>
@@ -23,7 +26,7 @@ export default async function DashboardPage() {
             </PageHeader>
             <div className="main-content">
                 <Suspense fallback={<DashboardSkeleton />}>
-                    <DashboardData user={user} isAdmin={isAdmin} />
+                    <DashboardData user={user} isAdmin />
                 </Suspense>
             </div>
         </>

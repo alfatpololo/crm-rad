@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/context/AuthProvider'
 import { RAD_LOGO_ALT, RAD_LOGO_SRC } from '@/lib/brandLogo'
+import { RAD_SITE_URL } from '@/lib/radLandingContent'
 
 function navLinkClass(pathname, href) {
   const isHome = href === '/'
@@ -14,8 +15,10 @@ function navLinkClass(pathname, href) {
 }
 
 export default function LmsNavbar() {
-  const { user } = useAuth()
+  const { user, role } = useAuth()
   const pathname = usePathname()
+  const accountHref = role === 'admin' || user?.email === 'admin@mail.com' ? '/dashboard' : '/profile'
+  const accountLabel = role === 'admin' || user?.email === 'admin@mail.com' ? 'Dashboard' : 'Profil'
 
   return (
     <header
@@ -40,18 +43,28 @@ export default function LmsNavbar() {
               Kelas
             </Link>
             <Link href="/products" className={navLinkClass(pathname, '/products')}>
-              Produk
+              Merch
             </Link>
+            <a
+              href={RAD_SITE_URL}
+              className="text-decoration-none small text-nowrap text-muted d-none d-md-inline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              radindonesia.com
+            </a>
           </div>
           <div className="d-flex align-items-center gap-2">
             {user ? (
               <>
-                <a href="/dashboard" className="btn btn-primary btn-sm">
-                  Dashboard
+                <a href={accountHref} className="btn btn-primary btn-sm">
+                  {accountLabel}
                 </a>
-                <Link href="/profile" className="btn btn-outline-secondary btn-sm d-none d-sm-inline-block">
-                  Profil
-                </Link>
+                {(role === 'admin' || user?.email === 'admin@mail.com') && (
+                  <Link href="/profile" className="btn btn-outline-secondary btn-sm d-none d-sm-inline-block">
+                    Profil
+                  </Link>
+                )}
               </>
             ) : (
               <>

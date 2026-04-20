@@ -11,7 +11,9 @@ const QRCodeViewPage = ({ params }) => {
         <>
             <PageHeader>
                 <div className="d-flex align-items-center gap-2 page-header-right-items-wrapper">
-                    <span style={{fontSize: '24px'}}>📱</span>
+                    <span className="text-primary" style={{ fontSize: '22px' }}>
+                        <i className="fas fa-qrcode" aria-hidden />
+                    </span>
                     <h4 className="mb-0">QR Code Kehadiran</h4>
                 </div>
             </PageHeader>

@@ -54,7 +54,8 @@ const RegisterForm = ({ path }) => {
                 throw new Error('Session creation failed. ' + result.error);
             }
 
-            router.push('/')
+            const dest = email === 'admin@mail.com' ? '/dashboard' : '/profile'
+            router.push(dest)
         } catch (error) {
             Swal.fire('Error', error.message, 'error')
         } finally {
@@ -94,7 +95,8 @@ const RegisterForm = ({ path }) => {
                 throw new Error('Session creation failed. ' + sessionResult.error)
             }
 
-            router.push('/')
+            const dest = user.email === 'admin@mail.com' ? '/dashboard' : '/profile'
+            router.push(dest)
         } catch (error) {
             console.error('Google sign in error:', error)
             Swal.fire({

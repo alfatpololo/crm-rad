@@ -193,7 +193,7 @@ const AdminCertificatesContent = () => {
                 <p>Hapus sertifikat untuk:</p>
                 <strong>${participantName}</strong>
                 <p class="text-muted small mt-2">Kelas: ${selectedService.name}</p>
-                <p class="text-danger small">⚠️ Tindakan ini tidak bisa dibatalkan!</p>
+                <p class="text-danger small">Peringatan: tindakan ini tidak bisa dibatalkan.</p>
             `,
             icon: 'warning',
             showCancelButton: true,
@@ -260,7 +260,10 @@ const AdminCertificatesContent = () => {
                 <div className="row g-4">
                     {/* Service Selection */}
                     <div className="col-md-4">
-                        <h5 className="fw-bold mb-3">📚 Pilih Kelas</h5>
+                        <h5 className="fw-bold mb-3">
+                            <i className="fas fa-graduation-cap me-2" aria-hidden />
+                            Pilih kelas
+                        </h5>
                         <div className="list-group">
                             {services.map(service => (
                                 <button
@@ -279,7 +282,9 @@ const AdminCertificatesContent = () => {
                     <div className="col-md-8">
                         {!selectedService ? (
                             <div className="text-center py-5 text-muted">
-                                <div style={{fontSize: '48px'}} className="mb-3">📜</div>
+                                <div className="mb-3 text-muted" style={{ fontSize: '2.5rem' }}>
+                                    <i className="fas fa-certificate" aria-hidden />
+                                </div>
                                 <p>Pilih kelas untuk melihat peserta dan issue sertifikat</p>
                             </div>
                         ) : loading ? (
@@ -294,7 +299,10 @@ const AdminCertificatesContent = () => {
                                         <div className="card bg-warning text-white border-0">
                                             <div className="card-body p-3">
                                                 <h4 className="mb-0">{notYetCertified.length}</h4>
-                                                <small>⏳ Belum Dapat Sertifikat</small>
+                                                <small>
+                                                    <i className="far fa-clock me-1" aria-hidden />
+                                                    Belum dapat sertifikat
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -302,7 +310,10 @@ const AdminCertificatesContent = () => {
                                         <div className="card bg-success text-white border-0">
                                             <div className="card-body p-3">
                                                 <h4 className="mb-0">{alreadyCertified.length}</h4>
-                                                <small>✓ Sudah Dapat Sertifikat</small>
+                                                <small>
+                                                    <i className="fas fa-check me-1" aria-hidden />
+                                                    Sudah dapat sertifikat
+                                                </small>
                                             </div>
                                         </div>
                                     </div>
@@ -311,7 +322,10 @@ const AdminCertificatesContent = () => {
                                 {/* Not Yet Certified */}
                                 {notYetCertified.length > 0 && (
                                     <div className="mb-4">
-                                        <h6 className="fw-bold mb-3">⏳ Belum Dapat Sertifikat ({notYetCertified.length})</h6>
+                                        <h6 className="fw-bold mb-3">
+                                            <i className="far fa-clock text-warning me-2" aria-hidden />
+                                            Belum dapat sertifikat ({notYetCertified.length})
+                                        </h6>
                                         <div className="table-responsive">
                                             <table className="table table-hover">
                                                 <thead className="table-light">
@@ -340,7 +354,8 @@ const AdminCertificatesContent = () => {
                                                                     onClick={() => handleIssueCertificate(participant.participantId, participant.name)}
                                                                     disabled={processing}
                                                                 >
-                                                                    📜 Issue Sertifikat
+                                                                    <i className="fas fa-certificate me-1" aria-hidden />
+                                                                    Issue sertifikat
                                                                 </button>
                                                             </td>
                                                         </tr>
@@ -354,7 +369,10 @@ const AdminCertificatesContent = () => {
                                 {/* Already Certified */}
                                 {alreadyCertified.length > 0 && (
                                     <div>
-                                        <h6 className="fw-bold mb-3">✓ Sudah Dapat Sertifikat ({alreadyCertified.length})</h6>
+                                        <h6 className="fw-bold mb-3">
+                                            <i className="fas fa-check text-success me-2" aria-hidden />
+                                            Sudah dapat sertifikat ({alreadyCertified.length})
+                                        </h6>
                                         <div className="table-responsive">
                                             <table className="table table-hover">
                                                 <thead className="table-light">
@@ -379,7 +397,10 @@ const AdminCertificatesContent = () => {
                                                                 </small>
                                                             </td>
                                                             <td>
-                                                                <span className="badge bg-success">✓ Issued</span>
+                                                                <span className="badge bg-success">
+                                                                    <i className="fas fa-check me-1" aria-hidden />
+                                                                    Issued
+                                                                </span>
                                                             </td>
                                                             <td>
                                                                 <button
@@ -388,7 +409,8 @@ const AdminCertificatesContent = () => {
                                                                     disabled={processing}
                                                                     title="Hapus Sertifikat"
                                                                 >
-                                                                    🗑️ Hapus
+                                                                    <i className="fas fa-trash-alt me-1" aria-hidden />
+                                                                    Hapus
                                                                 </button>
                                                             </td>
                                                         </tr>

@@ -15,9 +15,12 @@ function TabFallback() {
     )
 }
 
-const TabPaymentHistory = () => (
+/**
+ * @param {{ compact?: boolean, omitTabPaneWrapper?: boolean }} props — default compact=true (tab di profil CRM).
+ */
+const TabPaymentHistory = ({ compact = true, omitTabPaneWrapper = false }) => (
     <Suspense fallback={<TabFallback />}>
-        <ParticipantPaymentHistoryContent compact />
+        <ParticipantPaymentHistoryContent compact={compact} omitTabPaneWrapper={omitTabPaneWrapper} />
     </Suspense>
 )
 

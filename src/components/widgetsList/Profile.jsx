@@ -6,7 +6,10 @@ import { doc, getDoc } from 'firebase/firestore'
 import { db } from '@/lib/firebase/config'
 import { updateParticipantProfile } from '@/actions/profile'
 
-const Profile = () => {
+/**
+ * @param {{ variant?: 'crm' | 'eduvalt' }} props
+ */
+const Profile = ({ variant = 'crm' }) => {
     const { user } = useAuth()
     const [profileData, setProfileData] = useState(null)
     const [loading, setLoading] = useState(true)
@@ -78,6 +81,17 @@ const Profile = () => {
     }, [user])
 
     if (loading || !profileData) {
+        if (variant === 'eduvalt') {
+            return (
+                <div className="event-widget">
+                    <div className="thumb d-flex align-items-center justify-content-center bg-light" style={{ minHeight: 220 }}>
+                        <div className="spinner-border text-primary" role="status">
+                            <span className="visually-hidden">Loading...</span>
+                        </div>
+                    </div>
+                </div>
+            )
+        }
         return (
             <div className="card border-0 shadow-sm">
                 <div className="card-body p-4">
@@ -97,7 +111,63 @@ const Profile = () => {
     const phone = profileData.phoneNumber || 'Not set'
     const location = profileData.location || 'Not set'
 
-    const profileCard = (
+    const startEdit = () => {
+        setEditing(true)
+        setForm({
+            name: profileData.displayName || '',
+            phone: profileData.phoneNumber || '',
+            location: profileData.location || '',
+        })
+        setMessage(null)
+    }
+
+    const eduvaltProfileCard = (
+        <div className="event-widget">
+            <div className="thumb">
+                <Image
+                    width={400}
+                    height={280}
+                    sizes="(max-width: 768px) 100vw, 400px"
+                    src={avatarSrc}
+                    alt={displayName}
+                    className="img-fluid"
+                    style={{ width: '100%', height: 'auto', objectFit: 'cover' }}
+                />
+            </div>
+            <div className="event-cost-wrap">
+                <h4 className="price text-center mb-0">
+                    <strong className="d-block">{displayName}</strong>
+                    <span className="d-block small fw-normal text-muted mt-2">{email}</span>
+                </h4>
+                {profileData.emailVerified && (
+                    <p className="text-center small text-success mb-3 mb-lg-4">Email terverifikasi</p>
+                )}
+                <button type="button" className="btn w-100" onClick={startEdit}>
+                    Ubah profil
+                </button>
+                <div className="event-information-wrap">
+                    <h6 className="title">Informasi</h6>
+                    <ul className="list-wrap">
+                        <li>
+                            <i className="flaticon-user-1" /> Email <span>{email}</span>
+                        </li>
+                        {phone && phone !== 'Not set' && (
+                            <li>
+                                <i className="flaticon-phone-call" /> Telepon <span>{phone}</span>
+                            </li>
+                        )}
+                        {location && location !== 'Not set' && (
+                            <li>
+                                <i className="flaticon-pin" /> Lokasi <span>{location}</span>
+                            </li>
+                        )}
+                    </ul>
+                </div>
+            </div>
+        </div>
+    )
+
+    const crmProfileCard = (
         <div className="card border-0 shadow-sm">
             <div className="card-body p-4">
                 <div className="text-center mb-4">
@@ -106,8 +176,8 @@ const Profile = () => {
                             <Image width={140} height={140} sizes='100vw' src={avatarSrc} alt={displayName} className="img-fluid rounded-circle" />
                         </div>
                         {profileData.emailVerified && (
-                            <div className="position-absolute bottom-0 end-0 bg-white rounded-circle p-1 border border-2 border-white shadow-sm">
-                                <span style={{fontSize: '18px'}}>✅</span>
+                            <div className="position-absolute bottom-0 end-0 bg-white rounded-circle p-1 border border-2 border-white shadow-sm d-flex align-items-center justify-content-center">
+                                <i className="fas fa-check-circle text-success" style={{ fontSize: '16px' }} aria-hidden />
                             </div>
                         )}
                     </div>
@@ -123,8 +193,8 @@ const Profile = () => {
                 <div className="border-top pt-3 mb-3">
                     {location && location !== 'Not set' && (
                         <div className="d-flex align-items-center mb-3 p-2 rounded-2 hover-bg-light">
-                            <div className="bg-soft-primary p-2 rounded-circle me-3">
-                                <span style={{fontSize: '16px'}}>📍</span>
+                            <div className="bg-soft-primary p-2 rounded-circle me-3 d-flex align-items-center justify-content-center text-primary">
+                                <i className="fas fa-map-marker-alt" style={{ fontSize: '14px' }} aria-hidden />
                             </div>
                             <div className="flex-grow-1">
                                 <p className="small text-muted mb-0">Location</p>
@@ -134,8 +204,8 @@ const Profile = () => {
                     )}
                     {phone && phone !== 'Not set' && (
                         <div className="d-flex align-items-center mb-3 p-2 rounded-2 hover-bg-light">
-                            <div className="bg-soft-success p-2 rounded-circle me-3">
-                                <span style={{fontSize: '16px'}}>📞</span>
+                            <div className="bg-soft-success p-2 rounded-circle me-3 d-flex align-items-center justify-content-center text-success">
+                                <i className="fas fa-phone" style={{ fontSize: '14px' }} aria-hidden />
                             </div>
                             <div className="flex-grow-1">
                                 <p className="small text-muted mb-0">Phone</p>
@@ -144,8 +214,8 @@ const Profile = () => {
                         </div>
                     )}
                     <div className="d-flex align-items-center p-2 rounded-2 hover-bg-light">
-                        <div className="bg-soft-info p-2 rounded-circle me-3">
-                            <span style={{fontSize: '16px'}}>📧</span>
+                        <div className="bg-soft-info p-2 rounded-circle me-3 d-flex align-items-center justify-content-center text-info">
+                            <i className="fas fa-envelope" style={{ fontSize: '14px' }} aria-hidden />
                         </div>
                         <div className="flex-grow-1">
                             <p className="small text-muted mb-0">Email</p>
@@ -155,26 +225,16 @@ const Profile = () => {
                 </div>
 
                 <div className="d-grid gap-2 mt-4">
-                    <button
-                        type="button"
-                        className="btn btn-primary"
-                        onClick={() => {
-                            setEditing(true)
-                            setForm({
-                                name: profileData.displayName || '',
-                                phone: profileData.phoneNumber || '',
-                                location: profileData.location || '',
-                            })
-                            setMessage(null)
-                        }}
-                    >
-                        <span className="me-2">✏️</span>
+                    <button type="button" className="btn btn-primary" onClick={startEdit}>
+                        <i className="fas fa-pen me-2" aria-hidden />
                         <span>Edit Profile</span>
                     </button>
                 </div>
             </div>
         </div>
     )
+
+    const profileCard = variant === 'eduvalt' ? eduvaltProfileCard : crmProfileCard
 
     if (editing) {
         const handleSubmit = async (e) => {
@@ -198,61 +258,83 @@ const Profile = () => {
                 setMessage({ type: 'danger', text: res?.error || 'Gagal memperbarui profil.' })
             }
         }
+        const formInner = (
+            <>
+                {message && (
+                    <div className={`alert alert-${message.type} py-2 mb-3`} role="alert">
+                        {message.text}
+                    </div>
+                )}
+                <form onSubmit={handleSubmit}>
+                    <div className="mb-3">
+                        <label className="form-label">Nama</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={form.name}
+                            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                            placeholder="Nama lengkap"
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label">No. Telepon</label>
+                        <input
+                            type="tel"
+                            className="form-control"
+                            value={form.phone}
+                            onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
+                            placeholder="08xxxxxxxxxx"
+                        />
+                    </div>
+                    <div className="mb-3">
+                        <label className="form-label">Alamat / Lokasi</label>
+                        <input
+                            type="text"
+                            className="form-control"
+                            value={form.location}
+                            onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                            placeholder="Alamat atau kota"
+                        />
+                    </div>
+                    <p className="small text-muted mb-3">Email tidak dapat diubah (mengikuti akun login).</p>
+                    <div className="d-flex flex-wrap gap-2">
+                        <button type="submit" className="btn btn-primary" disabled={saving}>
+                            {saving ? 'Menyimpan...' : 'Simpan'}
+                        </button>
+                        <button
+                            type="button"
+                            className="btn btn-outline-secondary"
+                            onClick={() => {
+                                setEditing(false)
+                                setMessage(null)
+                            }}
+                            disabled={saving}
+                        >
+                            Batal
+                        </button>
+                    </div>
+                </form>
+            </>
+        )
+
+        if (variant === 'eduvalt') {
+            return (
+                <div className="event-widget">
+                    <div className="event-cost-wrap pt-4 px-3 pb-4">
+                        <h4 className="price mb-4">
+                            <strong>Edit profil</strong>
+                        </h4>
+                        {formInner}
+                    </div>
+                </div>
+            )
+        }
+
         return (
             <div className="card border-0 shadow-sm">
                 <div className="card-body p-4">
                     <h5 className="fw-bold mb-4">Edit Profil</h5>
-                    {message && (
-                        <div className={`alert alert-${message.type} py-2 mb-3`} role="alert">
-                            {message.text}
-                        </div>
-                    )}
-                    <form onSubmit={handleSubmit}>
-                        <div className="mb-3">
-                            <label className="form-label">Nama</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={form.name}
-                                onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                                placeholder="Nama lengkap"
-                            />
-                        </div>
-                        <div className="mb-3">
-                            <label className="form-label">No. Telepon</label>
-                            <input
-                                type="tel"
-                                className="form-control"
-                                value={form.phone}
-                                onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
-                                placeholder="08xxxxxxxxxx"
-                            />
-                        </div>
-                        <div className="mb-3">
-                            <label className="form-label">Alamat / Lokasi</label>
-                            <input
-                                type="text"
-                                className="form-control"
-                                value={form.location}
-                                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
-                                placeholder="Alamat atau kota"
-                            />
-                        </div>
-                        <p className="small text-muted mb-3">Email tidak dapat diubah (mengikuti akun login).</p>
-                        <div className="d-flex gap-2">
-                            <button type="submit" className="btn btn-primary" disabled={saving}>
-                                {saving ? 'Menyimpan...' : 'Simpan'}
-                            </button>
-                            <button
-                                type="button"
-                                className="btn btn-outline-secondary"
-                                onClick={() => { setEditing(false); setMessage(null); }}
-                                disabled={saving}
-                            >
-                                Batal
-                            </button>
-                        </div>
-                    </form>
+                    {formInner}
                 </div>
             </div>
         )

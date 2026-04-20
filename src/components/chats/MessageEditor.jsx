@@ -1,6 +1,6 @@
 import React from 'react'
 import Dropdown from '@/components/shared/Dropdown'
-import { FiHash, FiLink, FiPhoneCall, FiSend, FiVideo, } from 'react-icons/fi'
+import { FiHash, FiLink, FiPhoneCall, FiSend, FiSmile, FiVideo } from 'react-icons/fi'
 import { initMessage, uploadAttachments } from '../emails/ComposeMailFooter';
 import EmojiPicker from 'emoji-picker-react';
 import useEmojiPicker from '@/hooks/useEmojiPicker';
@@ -50,8 +50,8 @@ const MessageEditor = () => {
                     placeholder="Type your message here..."
                     defaultValue={emoji.join(' ')}
                 />
-                <div className='position-absolute emoji-clicker emoji fs-18 c-pointer' onClick={toggleEmojiPicker}>
-                    😊
+                <div className='position-absolute emoji-clicker emoji fs-18 c-pointer' onClick={toggleEmojiPicker} aria-label="Emoji">
+                    <FiSmile size={18} strokeWidth={1.5} />
                 </div>
             </div>
             {showEmojiPicker && <div className='emoji' ref={emojiPickerRefs}> <EmojiPicker onEmojiClick={(e) => setEmoji([...emoji, e.emoji])} className='position-absolute emoji-picker' /> </div>}
